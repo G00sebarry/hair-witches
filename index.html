@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Hair Witches: Color Rush</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <canvas id="game"></canvas>
+  
+  <!-- Sound toggle button -->
+  <button id="sound-toggle" aria-label="Toggle sound">🔊</button>
+
+  <!-- Load game modules in order -->
+  <script src="js/utils/constants.js"></script>
+  <script src="js/utils/helpers.js"></script>
+  <script src="js/core/audio.js"></script>
+  <script src="js/core/sprites.js"></script>
+  <script src="js/core/input.js"></script>
+  <script src="js/systems/particles.js"></script>
+  <script src="js/systems/background.js"></script>
+  <script src="js/systems/camera.js"></script>
+  <script src="js/entities/player.js"></script>
+  <script src="js/entities/objects.js"></script>
+  <script src="js/screens/start.js"></script>
+  <script src="js/screens/select.js"></script>
+  <script src="js/screens/hud.js"></script>
+  <script src="js/screens/gameover.js"></script>
+  <script src="js/screens/levelup.js"></script>
+  <script src="js/core/game.js"></script>
+</body>
+</html>
