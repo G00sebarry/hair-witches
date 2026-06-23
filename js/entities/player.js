@@ -113,7 +113,11 @@ const Player = (() => {
       ctx.globalAlpha = invincibleTimer > 0 ? 0.4 + 0.6 * Math.abs(Math.sin(time * 15)) : 1;
     }
     
-    ctx.drawImage(witchSprite, -cfg.width / 2, -cfg.height / 2, cfg.width, cfg.height);
+    let spriteState = 'idle';
+    if (invincibleTimer > 0) spriteState = 'hurt';
+    else if (Input.pressed || vy < 0) spriteState = 'fly';
+    const sprite = Sprites.getWitchSprite(theme, spriteState) || witchSprite;
+    ctx.drawImage(sprite, -cfg.width / 2, -cfg.height / 2, cfg.width, cfg.height);
     ctx.restore();
   }
   
