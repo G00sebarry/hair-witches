@@ -16,16 +16,17 @@ const Sprites = (() => {
   
   // ── Witch (themed by hair/glow/dress colors) ───────────
   function createWitch(theme) {
-    if (theme.name === 'НЕОН') {
+    const pngPrefix = { 'НЕОН': 'neon', 'ТОКСИК': 'toxic', 'ОГОНЬ': 'fire' }[theme.name];
+    if (pngPrefix) {
       ['fly', 'hurt', 'idle'].forEach(state => {
-        const key = `witch_НЕОН_${state}`;
+        const key = `witch_${theme.name}_${state}`;
         if (!cache[key]) {
           const img = new Image();
-          img.src = `sprites/witches/witch-neon-${state}.png`;
+          img.src = `sprites/witches/witch-${pngPrefix}-${state}.png`;
           cache[key] = img;
         }
       });
-      return cache['witch_НЕОН_fly'];
+      return cache[`witch_${theme.name}_fly`];
     }
 
     const h1 = theme.hairColors[0];
@@ -255,8 +256,9 @@ const Sprites = (() => {
   }
   
   function getWitchSprite(theme, state) {
-    if (theme.name === 'НЕОН') {
-      return cache[`witch_НЕОН_${state}`] || cache['witch_НЕОН_fly'];
+    const pngPrefix = { 'НЕОН': 'neon', 'ТОКСИК': 'toxic', 'ОГОНЬ': 'fire' }[theme.name];
+    if (pngPrefix) {
+      return cache[`witch_${theme.name}_${state}`] || cache[`witch_${theme.name}_fly`];
     }
     return cache[`witch_${theme.name}`];
   }
