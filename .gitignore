@@ -1,0 +1,5 @@
+PSD/
+Новая папка/
+*.psd
+.DS_Store
+node_modules/
