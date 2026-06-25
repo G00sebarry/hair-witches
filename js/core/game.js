@@ -86,6 +86,19 @@ const Game = (() => {
     state = GAME_STATE.LEVELUP;
   }
   
+  function triggerVictory() {
+    state = GAME_STATE.VICTORY;
+    totalScore += levelScore;
+
+    const highScore = parseInt(localStorage.getItem('hw_high') || '0');
+    if (totalScore > highScore) {
+      localStorage.setItem('hw_high', String(totalScore));
+    }
+
+    Audio8Bit.stopMusic();
+    VictoryScreen.reset();
+  }
+
   function triggerGameOver() {
     state = GAME_STATE.GAMEOVER;
     totalScore += levelScore;
@@ -225,9 +238,17 @@ const Game = (() => {
         }
       }
       
-      // Check level completion
+      // Check level completion (score-based, levels 2–3)
       if (score >= level.targetScore && level.targetScore !== Infinity) {
         advanceLevel();
+        ctx.restore();
+        requestAnimationFrame(loop);
+        return;
+      }
+
+      // Victory check: level 1 completed by surviving 90 seconds
+      if (level.id === 1 && levelTime >= 90 && state === GAME_STATE.PLAYING) {
+        triggerVictory();
         ctx.restore();
         requestAnimationFrame(loop);
         return;
@@ -242,12 +263,38 @@ const Game = (() => {
       Player.draw(gameTime);
       
       Camera.drawFlash();
-      HUD.draw(totalScore + levelScore, Player.lives, level, speedMultiplier, Player.shieldTimer, gameTime);
+      HUD.draw(totalScore + levelScore, Player.lives, level, speedMultiplier, Player.shieldTimer, gameTime, levelTime);
       
       drawScanLines();
       drawVignette();
     }
     
+    // ── VICTORY ──────────────────────────────────────────
+    else if (state === GAME_STATE.VICTORY) {
+      const level = getCurrentLevel();
+      Background.draw(level, gameTime, 0);
+      Objects.draw(gameTime);
+      Particles.update(dt);
+      Particles.draw();
+      Player.draw(gameTime);
+
+      VictoryScreen.draw(totalScore, gameTime);
+      drawScanLines();
+
+      if (hasClick) {
+        hasClick = false;
+        const btnW = 220 * SCALE, btnH = 44 * SCALE;
+        const btnX = W / 2 - btnW / 2;
+        const btnY = VictoryScreen.getRestartBtnY();
+        if (btnY > 0 && clickX >= btnX && clickX <= btnX + btnW &&
+            clickY >= btnY && clickY <= btnY + btnH) {
+          Audio8Bit.sfxClick();
+          state = GAME_STATE.SELECT;
+        }
+      }
+      Input.consumeJustPressed();
+    }
+
     // ── GAME OVER ────────────────────────────────────────
     else if (state === GAME_STATE.GAMEOVER) {
       gameOverDelay += dt;

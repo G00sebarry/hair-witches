@@ -8,6 +8,7 @@ const GAME_STATE = {
   PLAYING: 'playing',
   LEVELUP: 'levelup',    // Level transition screen
   GAMEOVER: 'gameover',
+  VICTORY: 'victory',    // Level 1 time-based win screen
 };
 
 // ── Color Palette ──────────────────────────────────────────
@@ -66,7 +67,7 @@ const LEVELS = [
     id: 1,
     name: 'Улицы Неона',
     subtitle: 'Ночной город',
-    targetScore: 300,
+    targetScore: Infinity,  // Level 1 ends by time (90s), not score
     baseSpeed: 2.5,
     spawnInterval: 1.4,
     speedGrowth: 0.08,      // 8% per 15s
@@ -119,26 +120,26 @@ const LEVELS = [
 const PROMO_TIERS = [
   {
     minScore: 0,
-    title: 'Цвет смылся!',
-    sub: 'Попробуй ещё раз!',
-    code: 'START5',
+    title: 'Ведьма-новичок',
+    sub: 'Неплохой первый полёт!',
+    code: 'WITCH5',
     discount: '5%',
     color: COL.pink,
   },
   {
-    minScore: 500,
-    title: '★ Продвинутая ведьма!',
+    minScore: 800,
+    title: '★ Опытная колдунья',
     sub: 'Отличная работа!',
-    code: 'COLOR10',
+    code: 'WITCH10',
     discount: '10%',
     color: COL.cyan,
   },
   {
-    minScore: 1500,
+    minScore: 2000,
     title: '✦ ВЕРХОВНАЯ ВЕДЬМА ✦',
     sub: 'Ты — мастер цвета!',
-    code: 'SUPERWITCH',
-    discount: '20%',
+    code: 'WITCH15',
+    discount: '15%',
     color: COL.lime,
   },
 ];
