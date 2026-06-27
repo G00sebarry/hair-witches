@@ -6,6 +6,7 @@ const GAME_STATE = {
   START: 'start',
   SELECT: 'select',      // Witch selection screen
   PLAYING: 'playing',
+  PAUSED: 'paused', 
   LEVELUP: 'levelup',    // Level transition screen
   GAMEOVER: 'gameover',
   VICTORY: 'victory',    // Level 1 time-based win screen
