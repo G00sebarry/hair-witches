@@ -203,10 +203,14 @@ const Game = (() => {
       
       // Update objects
       const playerCenter = Player.getCenter();
-      Objects.update(dt, level, speedMultiplier, playerCenter);
+      Objects.update(dt, level, speedMultiplier, playerCenter, Player.lives);
       
       // Collision detection
       if (!Player.dead) {
+        // урон от взрыва бомбы по радиусу
+        if (Objects.checkExplosions(Player.getHitbox())) {
+          if (Player.takeDamage()) { triggerGameOver(); }
+        }
         const hits = Objects.checkCollisions(Player.getHitbox());
         
         for (const hit of hits) {
@@ -222,10 +226,10 @@ const Game = (() => {
             const cx = hit.x + hit.w / 2;
             const cy = hit.y + hit.h / 2;
             
-            if (hit.type === 'potion') {
+            if (hit.type === 'potion' || hit.type === 'potionMid') {
               score += hit.points;
               levelScore += hit.points;
-              Particles.spawnBurst(cx, cy, COL.pink, 12);
+              Particles.spawnBurst(cx, cy, hit.type === 'potionMid' ? COL.purple : COL.pink, 12);
               Audio8Bit.sfxCollect();
             } else if (hit.type === 'crystal') {
               score += hit.points;

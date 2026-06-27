@@ -79,7 +79,7 @@ const LEVELS = [
     enemyChance: 0.25,      // 25% enemies
     crystalChance: 0.08,    // 8% crystals
     shieldChance: 0.04,     // 4% shields
-    heartChance: 0.015,     // 1.5% hearts (rare)
+    heartChance: 0.03,     // 1.5% hearts (rare)
     bgHue: 270,             // Purple sky
     bgColors: ['#050510', '#100025', '#0a0a12'],
     music: 'level1',
@@ -166,11 +166,12 @@ const PLAYER_CONFIG = {
 
 // ── Object Sizes ───────────────────────────────────────────
 const OBJ_SIZE = {
-  potion:   { w: 30, h: 40 },
-  crystal:  { w: 30, h: 40 },
-  shield:   { w: 32, h: 32 },
-  heart:    { w: 28, h: 28 },
-  boxdye:   { w: 36, h: 40 },
-  scissors: { w: 40, h: 36 },
-  bomb:     { w: 34, h: 38 },
+  potion:    { w: 30, h: 40 },
+  potionMid: { w: 32, h: 42 },   // новый средний флакон +25
+  crystal:   { w: 32, h: 42 },
+  shield:    { w: 32, h: 32 },
+  heart:     { w: 28, h: 28 },
+  boxdye:    { w: 36, h: 40 },
+  scissors:  { w: 40, h: 36 },
+  bomb:      { w: 34, h: 38 },
 };
