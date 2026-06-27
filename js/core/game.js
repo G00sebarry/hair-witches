@@ -257,10 +257,22 @@ const Game = (() => {
       // Level 1 final sequence
       if (level.id === 1) {
         if (levelTime >= 80) Objects.setSpawnFrozen(true); // прекратить спавн за 3с до замка
-        if (levelTime >= 83 && state === GAME_STATE.PLAYING) {
-          // Инициализация анимации замка
+
+        const castleReady = Background.isCastleLoaded();
+
+        // Если картинка вообще не загрузилась к 90с — прямо к победе
+        if (levelTime >= 90 && !castleReady && state === GAME_STATE.PLAYING) {
+          triggerVictory();
+          ctx.restore();
+          requestAnimationFrame(loop);
+          return;
+        }
+
+        // Запускаем замок: либо картинка готова и прошло 83с,
+        // либо картинка ещё грузится но уже 88с (всё равно запускаем с силуэтом)
+        if (state === GAME_STATE.PLAYING && ((levelTime >= 83 && castleReady) || levelTime >= 88)) {
           castleSavedSpeed = speed;
-          castleDrawW = Background.getCastleWidth() || (H * 0.90 * 4096 / 1280);
+          castleDrawW = Background.getCastleWidth();
           castleTargetX = W * 0.35 - castleDrawW * 0.5; // центр замка на 35% экрана
           castleX = W; // начало — за правым краем
           castleIntroTime = 0;
@@ -304,8 +316,14 @@ const Game = (() => {
       const BURST_AT  = ENTRY_DUR + FLY_DUR;
       const DONE_AT   = BURST_AT + 0.8;
 
-      Background.update(castleSavedSpeed);
-      Background.draw(level, gameTime, castleSavedSpeed);
+      // Фон скроллится только пока замок едет; после остановки — всё замирает
+      // (иначе город едет через прозрачные башни, и кажется что замок ещё движется)
+      if (castlePhase === 'entering') {
+        Background.update(castleSavedSpeed);
+        Background.draw(level, gameTime, castleSavedSpeed);
+      } else {
+        Background.draw(level, gameTime, 0); // стоп
+      }
 
       // позиция замка — cubic ease-out въезд, потом стоп
       if (castleIntroTime < ENTRY_DUR) {

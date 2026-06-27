@@ -46,20 +46,35 @@ const Background = (() => {
 
   // Castle end-of-level sprite (loaded separately, not in LAYER_CONFIG)
   const castleImg = new Image();
+  castleImg.onerror = () => console.warn('[Castle] Failed to load level1-castle.png');
   castleImg.src = 'sprites/backgrounds/level1-castle.png';
 
+  function isCastleLoaded() {
+    return castleImg.complete && castleImg.naturalWidth > 0;
+  }
+
   function getCastleWidth() {
-    if (!castleImg.complete || !castleImg.naturalWidth) return 0;
     const dh = H * 0.90;
-    return castleImg.naturalWidth * (dh / castleImg.naturalHeight);
+    if (isCastleLoaded()) return castleImg.naturalWidth * (dh / castleImg.naturalHeight);
+    return dh * (4096 / 1280); // известное соотношение сторон как запасной вариант
   }
 
   function drawCastle(castleX) {
-    if (!castleImg.complete || !castleImg.naturalWidth) return;
     const dh = H * 0.90;
-    const cw = castleImg.naturalWidth * (dh / castleImg.naturalHeight);
-    const drawY = 1.08 * H - dh;
-    ctx.drawImage(castleImg, Math.round(castleX), Math.round(drawY), Math.ceil(cw), Math.ceil(dh));
+    const cw = Math.ceil(getCastleWidth());
+    const drawY = Math.round(1.08 * H - dh);
+
+    if (!isCastleLoaded()) {
+      // Тёмный силуэт-заглушка пока картинка не загрузилась (или на слабом устройстве)
+      ctx.save();
+      ctx.globalAlpha = 0.92;
+      ctx.fillStyle = '#0d0620';
+      ctx.fillRect(Math.round(castleX), drawY, cw, Math.ceil(dh));
+      ctx.restore();
+      return;
+    }
+
+    ctx.drawImage(castleImg, Math.round(castleX), drawY, cw, Math.ceil(dh));
   }
 
   function layerReady(name) {
@@ -256,5 +271,5 @@ const Background = (() => {
     offset = 0;
   }
 
-  return { update, draw, reset, drawCastle, getCastleWidth };
+  return { update, draw, reset, drawCastle, getCastleWidth, isCastleLoaded };
 })();
