@@ -16,17 +16,7 @@ const Background = (() => {
 
   // ── Level 1 PNG Layer Config ────────────────────────────
   // НАСТРОЙКА СЛОЁВ — крути эти числа, чтобы менять плотность и глубину.
-  //
-  // paths    : картинки-сегменты, выкладываются встык (можно добавить ещё для разнообразия)
-  // parallax : множитель скорости (0 = стоит, 1 = полная скорость игры)
-  // drawH    : высота отрисовки слоя в долях от высоты экрана H
-  //            (1.0 = на весь экран; больше = крупнее и вылезает за верх)
-  // baseY    : положение НИЗА слоя в долях H (1.0 = низ слоя на нижней кромке экрана,
-  //            >1.0 = низ уходит ЗА экран вниз — так под слоем не видно пустоты)
-  //
-  // Принцип плотной стены: far рисуется выше (виден на горизонте),
-  // mid перекрывает низ far, near перекрывает низ mid. Все три читаются как глубина,
-  // но low-края всегда ниже экрана → нет дыр.
+  // paths/parallax/drawH/baseY — как раньше (НЕ менялись).
   const LAYER_CONFIG = {
     sky:  { paths: ['sprites/backgrounds/level1-sky.png'],  parallax: 0.12, drawH: 1.80, baseY: 1.00 },
     far:  { paths: ['sprites/backgrounds/level1-far.png'],  parallax: 0.30, drawH: 0.65, baseY: 0.59 },
@@ -34,7 +24,6 @@ const Background = (() => {
     near: { paths: ['sprites/backgrounds/level1-near.png'], parallax: 1.00, drawH: 1.45, baseY: 1.08 },
   };
 
-  // Pre-load all images indexed by layer name
   const bgLayers = {};
   Object.entries(LAYER_CONFIG).forEach(([name, cfg]) => {
     bgLayers[name] = cfg.paths.map(src => {
@@ -44,7 +33,16 @@ const Background = (() => {
     });
   });
 
-  // Castle end-of-level sprite (loaded separately, not in LAYER_CONFIG)
+  // ── Castle end-of-level sprite ──────────────────────────
+  // НАСТРОЙКА ЗАМКА:
+  const CASTLE = {
+    drawH: 0.90,        // высота замка в долях H
+    baseY: 1.08,        // низ замка (как у near) — за нижней кромкой
+    gateXFrac: 0.50,    // где ворота по ширине картинки (0.5 = центр)
+    gateYFrac: 0.72,    // где ворота по высоте картинки
+    focusXFrac: 0.42,   // куда поставить ВОРОТА на экране (доля ширины экрана)
+  };
+
   const castleImg = new Image();
   castleImg.onerror = () => console.warn('[Castle] Failed to load level1-castle.png');
   castleImg.src = 'sprites/backgrounds/level1-castle.png';
@@ -53,19 +51,43 @@ const Background = (() => {
     return castleImg.complete && castleImg.naturalWidth > 0;
   }
 
+  function getCastleHeight() { return H * CASTLE.drawH; }
+
   function getCastleWidth() {
-    const dh = H * 0.90;
+    const dh = getCastleHeight();
     if (isCastleLoaded()) return castleImg.naturalWidth * (dh / castleImg.naturalHeight);
-    return dh * (4096 / 1280); // известное соотношение сторон как запасной вариант
+    return dh * (4096 / 1280);
+  }
+
+  function getCastleDrawY() {
+    return CASTLE.baseY * H - getCastleHeight();
+  }
+
+  // Целевая X-позиция ЛЕВОГО края замка такая, чтобы ВОРОТА оказались
+  // на focusXFrac ширины экрана. Замок шире экрана — это нормально (масштаб).
+  function getCastleTargetX() {
+    const cw = getCastleWidth();
+    const gateOffsetInImg = cw * CASTLE.gateXFrac; // расстояние от левого края картинки до ворот
+    return W * CASTLE.focusXFrac - gateOffsetInImg;
+  }
+
+  // Абсолютные координаты ворот на экране при заданном левом крае замка castleX
+  function getGatePos(castleX) {
+    const cw = getCastleWidth();
+    const dh = getCastleHeight();
+    const drawY = getCastleDrawY();
+    return {
+      x: castleX + cw * CASTLE.gateXFrac,
+      y: drawY + dh * CASTLE.gateYFrac,
+    };
   }
 
   function drawCastle(castleX) {
-    const dh = H * 0.90;
+    const dh = getCastleHeight();
     const cw = Math.ceil(getCastleWidth());
-    const drawY = Math.round(1.08 * H - dh);
+    const drawY = Math.round(getCastleDrawY());
 
     if (!isCastleLoaded()) {
-      // Тёмный силуэт-заглушка пока картинка не загрузилась (или на слабом устройстве)
       ctx.save();
       ctx.globalAlpha = 0.92;
       ctx.fillStyle = '#0d0620';
@@ -73,7 +95,6 @@ const Background = (() => {
       ctx.restore();
       return;
     }
-
     ctx.drawImage(castleImg, Math.round(castleX), drawY, cw, Math.ceil(dh));
   }
 
@@ -81,16 +102,12 @@ const Background = (() => {
     return bgLayers[name].every(img => img.complete && img.naturalWidth);
   }
 
-  // ── Draw a parallax layer (segments tiled horizontally) ──
-  // extraY: extra downward shift in px (night-sky drift)
   function drawLayer(name, extraY) {
     const cfg = LAYER_CONFIG[name];
     const imgs = bgLayers[name];
     if (!layerReady(name)) return;
 
     const dh = H * cfg.drawH;
-
-    // scaled widths of each segment (preserve aspect at height dh)
     const segWidths = [];
     let totalW = 0;
     for (const img of imgs) {
@@ -100,11 +117,7 @@ const Background = (() => {
     }
     if (!totalW) return;
 
-    // Vertical: bottom of layer sits at baseY * H, then we lift by dh.
-    // baseY >= 1.0 pushes the layer's bottom at/below the screen edge → no gap underneath.
     const drawY = cfg.baseY * H - dh + (extraY || 0);
-
-    // Horizontal infinite scroll
     const scrolled = ((-offset * cfg.parallax) % totalW + totalW) % totalW;
     let startX = -scrolled;
 
@@ -118,7 +131,6 @@ const Background = (() => {
   }
 
   // ── Procedural fallbacks (levels 2–3 and loading state) ──
-
   function drawSkyGradient(level) {
     const colors = level.bgColors;
     const grd = ctx.createLinearGradient(0, 0, 0, H);
@@ -131,7 +143,6 @@ const Background = (() => {
 
   function drawStars(time) {
     stars.forEach(s => {
-      // stars drift slightly slower than far layer for depth
       const x = ((s.x + offset * 0.18) % (W + 100) + W + 100) % (W + 100) - 50;
       const y = s.y * H * 0.6;
       const alpha = 0.4 + 0.6 * Math.abs(Math.sin(time * s.speed + s.blink));
@@ -228,15 +239,12 @@ const Background = (() => {
 
   function draw(level, time, speed) {
     if (level.id === 1) {
-      // Night progression 0 → 1 across 90 seconds
       const nightT = Math.min(time / 90, 1);
       const skyShift = nightT * H * 0.18;
 
-      // Deep base behind everything
       ctx.fillStyle = '#070512';
       ctx.fillRect(0, 0, W, H);
 
-      // Sky PNG drifts down over time; gradient fallback while loading
       if (layerReady('sky')) {
         drawLayer('sky', skyShift);
       } else {
@@ -244,13 +252,10 @@ const Background = (() => {
       }
 
       drawStars(time);
-
-      // City layers — back to front, dense overlapping
       drawLayer('far');
       drawLayer('mid');
       drawLayer('near');
 
-      // Night darkening — begins at 30s, reaches full by 90s
       const overlayT = Math.min(Math.max(time - 30, 0) / 60, 1);
       if (overlayT > 0) {
         ctx.globalAlpha = overlayT * 0.35;
@@ -271,5 +276,9 @@ const Background = (() => {
     offset = 0;
   }
 
-  return { update, draw, reset, drawCastle, getCastleWidth, isCastleLoaded };
+  return {
+    update, draw, reset,
+    drawCastle, getCastleWidth, isCastleLoaded,
+    getCastleTargetX, getGatePos,
+  };
 })();

@@ -277,24 +277,25 @@ const Game = (() => {
         if (state === GAME_STATE.PLAYING && ((levelTime >= 83 && castleReady) || levelTime >= 88)) {
           castleSavedSpeed = speed;
           castleDrawW = Background.getCastleWidth();
-          castleTargetX = W * 0.35 - castleDrawW * 0.5; // центр замка на 35% экрана
-          castleX = W; // начало — за правым краем
+          castleTargetX = Background.getCastleTargetX(); // позиция чтоб ворота были в фокусе
+          castleX = W; // старт за правым краем
           castleIntroTime = 0;
           castlePhase = 'entering';
           castleBurstDone = false;
-          const _dh = H * 0.90;
-          const _drawY = 1.08 * H - _dh;
-          castleGateX = castleTargetX + castleDrawW * 0.5; // ворота = центр картинки
-          castleGateY = _drawY + _dh * 0.72;              // ворота на 72% высоты
+          // ворота берём из Background по целевой позиции
+          const gate = Background.getGatePos(castleTargetX);
+          castleGateX = gate.x;
+          castleGateY = gate.y;
           savedWitchCX = Player.x + PLAYER_CONFIG.width / 2;
           savedWitchCY = Player.y + PLAYER_CONFIG.height / 2;
+          // убрать весь лут с экрана — чистый выезд замка (вариант Б)
+          Objects.reset();
           state = GAME_STATE.CASTLE_INTRO;
           ctx.restore();
           requestAnimationFrame(loop);
           return;
         }
       }
-      
       // Update & draw particles
       Particles.update(dt);
       
@@ -311,59 +312,53 @@ const Game = (() => {
     }
     
     // ── CASTLE INTRO ─────────────────────────────────────
+    // ── CASTLE INTRO ─────────────────────────────────────
     else if (state === GAME_STATE.CASTLE_INTRO) {
       const level = getCurrentLevel();
       castleIntroTime += dt;
 
-      const ENTRY_DUR = 6.0;  // замок едет 6 секунд
-      const FLY_DUR   = 2.0;  // ведьма летит 2 секунды
-      const BURST_AT  = ENTRY_DUR + FLY_DUR;
-      const DONE_AT   = BURST_AT + 0.8;
+      const ENTRY_DUR = 5.0;   // замок въезжает 5 сек
+      const FLY_DUR   = 1.8;   // ведьма летит в ворота 1.8 сек
+      const DONE_AT   = ENTRY_DUR + FLY_DUR + 0.7;
 
-      // Фон скроллится только пока замок едет; после остановки — всё замирает
-      // (иначе город едет через прозрачные башни, и кажется что замок ещё движется)
-      if (castlePhase === 'entering') {
-        Background.update(castleSavedSpeed);
-        Background.draw(level, gameTime, castleSavedSpeed);
-      } else {
-        Background.draw(level, gameTime, 0); // стоп
-      }
+      // ── ОДИН проход отрисовки фона за кадр (без моргания) ──
+      // Фон скроллится пока замок едет, потом замирает.
+      const bgSpeed = (castlePhase === 'entering') ? castleSavedSpeed : 0;
+      Background.update(bgSpeed);
+      Background.draw(level, gameTime, bgSpeed);
 
-      // позиция замка — cubic ease-out въезд, потом стоп
+      // ── позиция замка: ease-out въезд, затем стоп ──
       if (castleIntroTime < ENTRY_DUR) {
         const t = Math.min(castleIntroTime / ENTRY_DUR, 1);
         const eased = 1 - Math.pow(1 - t, 3);
         castleX = W + (castleTargetX - W) * eased;
-        castlePhase = 'entering';
       } else {
         castleX = castleTargetX;
         if (castlePhase === 'entering') {
           castlePhase = 'flying';
-          // сохраняем позицию ведьмы в момент остановки замка
           savedWitchCX = Player.x + PLAYER_CONFIG.width / 2;
           savedWitchCY = Player.y + PLAYER_CONFIG.height / 2;
         }
       }
 
-      // замок поверх фона, но под объектами и ведьмой
+      // замок поверх фона
       Background.drawCastle(castleX);
 
-      // уже летящие объекты долетают и уходят с экрана
-      Objects.update(dt, level, 1.0, null);
-      Objects.draw(gameTime);
-
+      // частицы (лута уже нет — мы его убрали при запуске)
       Particles.update(dt);
       Particles.draw();
 
-      // ведьма: во время въезда — нормальное управление; потом — автополёт в замок
+      // ── ведьма ──
       if (castlePhase === 'entering') {
-        Player.update(dt); // игрок управляет, но смерть не обрабатываем
+        Player.update(dt);       // игрок ещё управляет, но урон не обрабатываем
         Player.draw(gameTime);
       } else {
         const flyT  = Math.min((castleIntroTime - ENTRY_DUR) / FLY_DUR, 1.0);
-        const eased = flyT * flyT; // ease-in: ускорение к воротам
-        const wx = lerp(savedWitchCX, castleGateX, eased);
-        const wy = lerp(savedWitchCY, castleGateY, eased);
+        const eased = flyT * flyT;
+        // ворота пересчитываем от финальной позиции замка
+        const gate = Background.getGatePos(castleTargetX);
+        const wx = lerp(savedWitchCX, gate.x, eased);
+        const wy = lerp(savedWitchCY, gate.y, eased);
         const sc = 1.0 - flyT;
 
         if (sc > 0.02) {
@@ -376,12 +371,11 @@ const Game = (() => {
           ctx.restore();
         }
 
-        // вспышка и частицы когда ведьма влетает в ворота
         if (flyT >= 1.0 && !castleBurstDone) {
           castleBurstDone = true;
-          Particles.spawnBurst(castleGateX, castleGateY, COL.gold, 30);
-          Particles.spawnBurst(castleGateX, castleGateY, COL.fuchsia, 20);
-          Particles.spawnSparkle(castleGateX, castleGateY, COL.white, 15);
+          Particles.spawnBurst(gate.x, gate.y, COL.gold, 30);
+          Particles.spawnBurst(gate.x, gate.y, COL.fuchsia, 20);
+          Particles.spawnSparkle(gate.x, gate.y, COL.white, 15);
           Camera.flash(0.5, '#FFD700');
         }
       }
