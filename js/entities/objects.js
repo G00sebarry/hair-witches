@@ -1,13 +1,15 @@
 /* ============================================================
    OBJECTS — Spawning & managing collectibles & enemies
-   Лут: 3 тира (+10 / +25 / +75). Сердце только при ≤2 жизнях,
-   хаотичная траектория. Анимация подбора (pop + всплывающие очки).
+   Враги дополированы: бомба с телеграфом + сочный взрыв (вариант А),
+   живые черепа, баланс под казуальных (мешать очкам, не убивать).
+   Лут: 3 тира (+10 / +25 / +75). Сердце только при ≤2 жизнях.
    ============================================================ */
 
 const Objects = (() => {
   let objects = [];
-  let popFx = [];        // эффекты подбора (pop + растворение)
+  let popFx = [];        // эффекты подбора лута
   let floatTexts = [];   // всплывающие "+25"
+  let blastFx = [];      // визуал взрывов бомб (вспышка + волна)
   let spawnTimer = 0;
   let spawnFrozen = false;
 
@@ -28,6 +30,7 @@ const Objects = (() => {
     objects = [];
     popFx = [];
     floatTexts = [];
+    blastFx = [];
     spawnTimer = 0;
     spawnFrozen = false;
   }
@@ -36,7 +39,6 @@ const Objects = (() => {
     spawnFrozen = frozen;
   }
 
-  // playerLives нужен чтобы спавнить сердце только когда жизней мало
   function spawn(level, speedMultiplier, playerLives) {
     const speed = level.baseSpeed * speedMultiplier;
     const r = Math.random();
@@ -47,36 +49,38 @@ const Objects = (() => {
     if (r < cumulative) {
       const enemyRoll = Math.random();
 
-      // Бомба — теперь и на уровне 1, со взрывом (логика взрыва в update)
-      if (enemyRoll < 0.22) {
+      // Бомба (вариант А): медленнее, длинный фитиль, телеграф, зона взрыва
+      if (enemyRoll < 0.25) {
         objects.push({
-          type: 'bomb', x: W + 20, y: rand(60, H - 80),
+          type: 'bomb', x: W + 20, y: rand(70, H - 90),
           w: OBJ_SIZE.bomb.w, h: OBJ_SIZE.bomb.h, img: bombImg,
-          vx: -(speed * 45 + rand(10, 25)), vy: 0,
-          trackSpeed: 35 + level.id * 12,
-          fuse: 2.2,          // таймер до взрыва (сек), считаем когда бомба близко
-          armed: false,       // активируется когда подлетает к игроку
-          enemy: true,
+          vx: -(speed * 38 + rand(8, 18)),   // медленнее обычных врагов
+          vy: 0,
+          trackSpeed: 26 + level.id * 8,      // мягче следит за игроком
+          fuse: 3.2,                          // длинный фитиль — успеешь и на десктопе
+          armed: false,
+          blinkLead: 1.2,                     // за сколько до взрыва начинает мигать
+          blastR: 95,                         // радиус опасной зоны взрыва
+          enemy: true, time: 0,
         });
-      } else if (enemyRoll < 0.55) {
-        // Череп/коробка — теперь движется по горизонтали туда-сюда
+      } else if (enemyRoll < 0.62) {
+        // Череп/коробка — живее: быстрее + шире болтанка влево-вправо
         objects.push({
           type: 'boxdye', x: W + 20, y: rand(60, H - 90),
           w: OBJ_SIZE.boxdye.w, h: OBJ_SIZE.boxdye.h, img: boxDyeImg,
-          vx: -(speed * 60 + rand(10, 35)), vy: 0,
-          driftAmp: 40 + rand(0, 40),    // амплитуда горизонтального дрейфа
-          driftFreq: 1.5 + rand(0, 1.5),
+          baseVx: -(speed * 70 + rand(15, 40)),  // быстрее (было ~55)
+          driftAmp: 90 + rand(0, 70),            // шире амплитуда (было 40)
+          driftFreq: 2.2 + rand(0, 1.8),         // живее (было 1.5)
           driftPhase: rand(0, Math.PI * 2),
-          baseVx: -(speed * 55 + rand(10, 30)),
           enemy: true, time: 0,
         });
       } else {
-        // Ножницы — вертикальный синус (летают вверх-вниз)
+        // Ножницы — вертикальный синус
         objects.push({
           type: 'scissors', x: W + 20, y: H * 0.5,
           w: OBJ_SIZE.scissors.w, h: OBJ_SIZE.scissors.h, img: scissorsImg,
-          vx: -(speed * 60 + rand(10, 35)), vy: 0,
-          sinAmp: 80 + rand(0, 90), sinFreq: 2 + rand(0, 2),
+          vx: -(speed * 62 + rand(10, 35)), vy: 0,
+          sinAmp: 85 + rand(0, 90), sinFreq: 2 + rand(0, 2),
           sinPhase: rand(0, Math.PI * 2), baseY: rand(90, H - 110),
           enemy: true, time: 0,
         });
@@ -114,19 +118,18 @@ const Objects = (() => {
       objects.push({
         type: 'heart', x: W + 20, y: rand(80, H - 120),
         w: OBJ_SIZE.heart.w, h: OBJ_SIZE.heart.h, img: heartImg,
-        vx: -(speed * 48 + rand(5, 15)), vy: 0,
-        // хаотика: блуждание по Y + переменная скорость
-        wanderAmpY: 60 + rand(0, 60), wanderFreqY: 1.8 + rand(0, 1.6),
+        baseVx: -(speed * 46 + rand(5, 15)),
+        wanderAmpY: 70 + rand(0, 60), wanderFreqY: 1.8 + rand(0, 1.6),
         wanderPhaseY: rand(0, Math.PI * 2),
-        wanderAmpX: 25 + rand(0, 25), wanderFreqX: 1.2 + rand(0, 1.2),
+        wanderAmpX: 30 + rand(0, 25), wanderFreqX: 1.2 + rand(0, 1.2),
         wanderPhaseX: rand(0, Math.PI * 2),
-        baseY: rand(80, H - 120), baseVx: -(speed * 48 + rand(5, 15)),
+        baseY: rand(80, H - 120),
         enemy: false, points: 0, time: 0,
       });
       return;
     }
 
-    // ── ЛУТ ТИР 1: розовый флакон-сердечко +10 (частый, по умолчанию) ──
+    // ── ЛУТ ТИР 1: розовый флакон +10 (частый) ──
     objects.push({
       type: 'potion', x: W + 20, y: rand(40, H - 80),
       w: OBJ_SIZE.potion.w, h: OBJ_SIZE.potion.h, img: potionImg,
@@ -134,8 +137,7 @@ const Objects = (() => {
       enemy: false, points: 10, tier: 1,
     });
 
-    // ── ЛУТ ТИР 2: фиолетовый флакон +25 (средний) — иногда вместе ──
-    // подмешиваем средний тир с шансом, чтобы был поток средних очков
+    // ── ЛУТ ТИР 2: фиолетовый флакон +25 (подмешиваем) ──
     if (Math.random() < 0.35) {
       objects.push({
         type: 'potionMid', x: W + 20 + rand(60, 140), y: rand(40, H - 80),
@@ -146,8 +148,22 @@ const Objects = (() => {
     }
   }
 
+  // спавн сочного взрыва (вспышка + волна + искры)
+  function detonate(o) {
+    const bx = o.x + o.w / 2, by = o.y + o.h / 2;
+    o.exploded = true;
+    o.dealtDamage = false;
+    blastFx.push({ x: bx, y: by, r: 0, maxR: o.blastR, t: 0, dur: 0.45 });
+    // частицы-искры
+    Particles.spawnBurst(bx, by, '#FF6600', 24);
+    Particles.spawnBurst(bx, by, '#FFD700', 18);
+    Particles.spawnSparkle(bx, by, '#FFFFFF', 12);
+    Camera.shake(0.5, 14);
+    Camera.flash(0.35, '#FF7700');
+    Audio8Bit.sfxHit && Audio8Bit.sfxHit();
+  }
+
   function update(dt, level, speedMultiplier, playerCenter, playerLives) {
-    // Spawn
     if (!spawnFrozen) {
       spawnTimer += dt;
       const interval = level.spawnInterval / speedMultiplier;
@@ -157,71 +173,74 @@ const Objects = (() => {
       }
     }
 
-    // Move objects
     objects.forEach(o => {
       o.time = (o.time || 0) + dt;
 
       if (o.type === 'scissors') {
         o.x += o.vx * dt;
         o.y = o.baseY + Math.sin(o.time * o.sinFreq + o.sinPhase) * o.sinAmp;
+
       } else if (o.type === 'boxdye') {
-        // горизонтальный дрейф: скорость по X колеблется (туда-сюда на фоне движения влево)
         const drift = Math.sin(o.time * o.driftFreq + o.driftPhase) * o.driftAmp;
         o.x += (o.baseVx + drift) * dt;
+
       } else if (o.type === 'heart') {
-        // хаотичное блуждание
         o.x += (o.baseVx + Math.sin(o.time * o.wanderFreqX + o.wanderPhaseX) * o.wanderAmpX) * dt;
         o.y = o.baseY + Math.sin(o.time * o.wanderFreqY + o.wanderPhaseY) * o.wanderAmpY;
         o.y = clamp(o.y, 30, H - o.h - 30);
-      } else if (o.type === 'bomb' && playerCenter) {
-        o.x += o.vx * dt;
-        // следит за Y игрока
-        const diff = playerCenter.y - (o.y + o.h / 2);
-        o.y += Math.sign(diff) * Math.min(Math.abs(diff), o.trackSpeed * dt);
-        // взвод фитиля когда бомба входит в левую половину экрана
-        if (!o.armed && o.x < W * 0.6) o.armed = true;
-        if (o.armed) {
-          o.fuse -= dt;
-          if (o.fuse <= 0 && !o.exploded) {
-            o.exploded = true;
-            o.explodeR = 0;
-            // взрыв: урон в радиусе проверяется в checkExplosions
+
+      } else if (o.type === 'bomb') {
+        if (!o.exploded) {
+          o.x += o.vx * dt;
+          // мягко следит за Y игрока
+          if (playerCenter) {
+            const diff = playerCenter.y - (o.y + o.h / 2);
+            o.y += Math.sign(diff) * Math.min(Math.abs(diff), o.trackSpeed * dt);
+          }
+          // взвод когда входит в левые ~70% экрана
+          if (!o.armed && o.x < W * 0.7) o.armed = true;
+          if (o.armed) {
+            o.fuse -= dt;
+            if (o.fuse <= 0) detonate(o);
           }
         }
+
       } else {
         o.x += o.vx * dt;
       }
     });
 
-    // Update pickup pop fx
+    // обновляем pop / floatText / blast
     popFx.forEach(p => { p.t += dt; });
     popFx = popFx.filter(p => p.t < p.dur);
 
-    // Update floating score texts
     floatTexts.forEach(f => { f.t += dt; f.y -= 30 * dt; });
     floatTexts = floatTexts.filter(f => f.t < f.dur);
 
-    // Remove off-screen (взорвавшиеся бомбы убираем после анимации взрыва)
+    blastFx.forEach(b => {
+      b.t += dt;
+      b.r = b.maxR * Math.min(b.t / 0.25, 1); // быстрое расширение волны
+    });
+    blastFx = blastFx.filter(b => b.t < b.dur);
+
+    // удаляем улетевшее / отгремевшее
     objects = objects.filter(o => {
-      if (o.exploded) {
-        o.explodeR += dt * 220;
-        return o.explodeR < o.explodeMax;
-      }
+      if (o.exploded) return false; // взорванная бомба исчезает (визуал в blastFx)
       return o.x + o.w > -60;
     });
   }
 
-  // Проверка попадания во взрыв бомбы. Возвращает true если игрок задет.
+  // урон по радиусу взрыва. true если игрок задет.
   function checkExplosions(playerHitbox) {
     const pcx = playerHitbox.x + playerHitbox.w / 2;
     const pcy = playerHitbox.y + playerHitbox.h / 2;
-    for (const o of objects) {
-      if (o.exploded && !o.dealtDamage) {
-        const bx = o.x + o.w / 2, by = o.y + o.h / 2;
-        const R = o.explodeMax;
-        const dist = Math.hypot(pcx - bx, pcy - by);
-        if (dist < R) {
-          o.dealtDamage = true;
+    for (const b of blastFx) {
+      if (b.dealtDamage) continue;
+      // урон в момент пика волны (первые ~0.25с)
+      if (b.t <= 0.28) {
+        const dist = Math.hypot(pcx - b.x, pcy - b.y);
+        if (dist < b.maxR * 0.85) {
+          b.dealtDamage = true;
           return true;
         }
       }
@@ -233,28 +252,23 @@ const Objects = (() => {
     const results = [];
     for (let i = objects.length - 1; i >= 0; i--) {
       const o = objects[i];
-      if (o.exploded) continue; // взорвавшаяся бомба не «подбирается»
+      if (o.exploded) continue;
       const oh = { x: o.x + 4, y: o.y + 4, w: o.w - 8, h: o.h - 8 };
       if (aabbCollide(playerHitbox, oh)) {
-        // бомба при касании — сразу взрыв
+        // прямое касание бомбы — мгновенный взрыв
         if (o.type === 'bomb') {
-          o.exploded = true; o.explodeR = 0;
-          results.push({ ...o, index: i });
-          objects.splice(i, 1);
+          detonate(o);
+          results.push({ type: 'bomb', enemy: true, x: o.x, y: o.y, w: o.w, h: o.h });
           continue;
         }
         results.push({ ...o, index: i });
-        // спавним анимацию подбора для лута (не врагов)
-        if (!o.enemy) {
-          spawnPickupFx(o);
-        }
+        if (!o.enemy) spawnPickupFx(o);
         objects.splice(i, 1);
       }
     }
     return results;
   }
 
-  // pop-анимация + всплывающие очки при подборе
   function spawnPickupFx(o) {
     const cx = o.x + o.w / 2, cy = o.y + o.h / 2;
     popFx.push({ x: cx, y: cy, w: o.w, h: o.h, img: o.img, t: 0, dur: 0.32 });
@@ -265,30 +279,28 @@ const Objects = (() => {
   }
 
   function draw(time) {
-    // объекты
     objects.forEach(o => {
       ctx.save();
 
-      if (o.exploded) {
-        // визуал взрыва — расширяющееся кольцо
-        const a = 1 - (o.explodeR / o.explodeMax);
-        ctx.globalAlpha = Math.max(a, 0);
-        ctx.strokeStyle = '#FF6600';
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.arc(o.x + o.w / 2, o.y + o.h / 2, o.explodeR, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.strokeStyle = '#FFD700';
-        ctx.globalAlpha = Math.max(a * 0.6, 0);
-        ctx.beginPath();
-        ctx.arc(o.x + o.w / 2, o.y + o.h / 2, o.explodeR * 0.6, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
-        return;
-      }
-
-      // свечение по типу
-      if (o.type === 'crystal') {
+      // бомба: телеграф — мигает красным перед взрывом
+      if (o.type === 'bomb' && o.armed && !o.exploded) {
+        const danger = o.fuse <= o.blinkLead;
+        if (danger) {
+          const blink = 0.5 + 0.5 * Math.sin(time * 22);
+          // пульсирующая красная аура-предупреждение
+          ctx.globalAlpha = 0.20 * blink;
+          ctx.fillStyle = '#FF3030';
+          ctx.beginPath();
+          ctx.arc(o.x + o.w / 2, o.y + o.h / 2, o.blastR * 0.85, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.shadowColor = '#FF0000';
+          ctx.shadowBlur = 10 + 10 * blink;
+        } else {
+          ctx.shadowColor = '#FF4444';
+          ctx.shadowBlur = 8;
+        }
+      } else if (o.type === 'crystal') {
         ctx.shadowColor = COL.cyan; ctx.shadowBlur = 14 + 5 * Math.sin(time * 4);
       } else if (o.type === 'potionMid') {
         ctx.shadowColor = '#B266FF'; ctx.shadowBlur = 10 + 4 * Math.sin(time * 3);
@@ -315,12 +327,51 @@ const Objects = (() => {
       ctx.restore();
     });
 
-    // pop-эффекты подбора (увеличение + растворение вверх)
+    // ── ВЗРЫВЫ (вау-фактор): вспышка ядра + двойная ударная волна ──
+    blastFx.forEach(b => {
+      const k = b.t / b.dur; // 0→1
+      ctx.save();
+
+      // ядро-вспышка (быстро гаснет)
+      if (k < 0.4) {
+        const coreA = 1 - k / 0.4;
+        ctx.globalAlpha = coreA;
+        const grd = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.maxR * 0.6);
+        grd.addColorStop(0, '#FFFFFF');
+        grd.addColorStop(0.4, '#FFD700');
+        grd.addColorStop(1, 'rgba(255,102,0,0)');
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.maxR * 0.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // внешняя ударная волна (кольцо расширяется и тает)
+      const ringA = Math.max(1 - k, 0);
+      ctx.globalAlpha = ringA * 0.9;
+      ctx.strokeStyle = '#FF7700';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // внутреннее кольцо
+      ctx.globalAlpha = ringA * 0.6;
+      ctx.strokeStyle = '#FFD700';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r * 0.65, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.restore();
+    });
+
+    // pop-эффекты подбора
     popFx.forEach(p => {
-      const k = p.t / p.dur;           // 0→1
-      const scale = 1 + k * 0.8;       // растёт
-      const alpha = 1 - k;             // тает
-      const yLift = k * 14;            // плывёт вверх
+      const k = p.t / p.dur;
+      const scale = 1 + k * 0.8;
+      const alpha = 1 - k;
+      const yLift = k * 14;
       ctx.save();
       ctx.globalAlpha = Math.max(alpha, 0);
       const dw = p.w * scale, dh = p.h * scale;
@@ -328,7 +379,7 @@ const Objects = (() => {
       ctx.restore();
     });
 
-    // всплывающие очки "+25"
+    // всплывающие очки
     floatTexts.forEach(f => {
       const k = f.t / f.dur;
       ctx.save();
