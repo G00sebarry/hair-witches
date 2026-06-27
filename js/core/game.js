@@ -191,9 +191,13 @@ const Game = (() => {
       
       // Update player
       const playerResult = Player.update(dt);
-      if (playerResult === 'ground_death') {
+      if (playerResult === 'ground_hit') {
+        // Касание дна = урон. Если урон прошёл (не во время неуязвимости) — отскок вверх.
+        const wasInvincible = Player.invincibleTimer > 0;
         if (Player.takeDamage()) {
           triggerGameOver();
+        } else if (!wasInvincible) {
+          Player.bounceUp(); // подбросить, чтобы не залипал на дне
         }
       }
       
