@@ -49,10 +49,13 @@ canvas {
 
 #sound-toggle:hover {
   border-color: #FF00FF;
-  #pause-toggle {
+}
+
+#pause-toggle {
   position: fixed;
   top: 12px;
-  right: 60px;
+  right: 60px !important;
+  left: auto !important;
   z-index: 100;
   width: 40px;
   height: 40px;
@@ -60,13 +63,15 @@ canvas {
   border-radius: 8px;
   background: rgba(10, 10, 20, 0.8);
   color: #fff;
-  font-size: 16px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
   cursor: pointer;
   display: none;
   align-items: center;
   justify-content: center;
   transition: border-color 0.3s;
 }
+
 #pause-toggle:hover { border-color: #FF00FF; }
 #pause-toggle.visible { display: flex; }
-}

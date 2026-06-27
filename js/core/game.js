@@ -45,10 +45,10 @@ const Game = (() => {
   function togglePause() {
     if (state === GAME_STATE.PLAYING) {
       state = GAME_STATE.PAUSED;
-      if (pauseBtn) pauseBtn.textContent = '▶';
+      if (pauseBtn) pauseBtn.textContent = '►';
     } else if (state === GAME_STATE.PAUSED) {
       state = GAME_STATE.PLAYING;
-      if (pauseBtn) pauseBtn.textContent = '⏸';
+      if (pauseBtn) pauseBtn.textContent = 'II';
     }
   }
 
