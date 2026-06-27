@@ -5,6 +5,7 @@
 const Objects = (() => {
   let objects = [];
   let spawnTimer = 0;
+  let spawnFrozen = false;
   
   // Pre-create sprite references
   let potionImg, crystalImg, shieldImg, heartImg, boxDyeImg, scissorsImg, bombImg;
@@ -22,6 +23,11 @@ const Objects = (() => {
   function reset() {
     objects = [];
     spawnTimer = 0;
+    spawnFrozen = false;
+  }
+
+  function setSpawnFrozen(frozen) {
+    spawnFrozen = frozen;
   }
   
   function spawn(level, speedMultiplier) {
@@ -155,12 +161,14 @@ const Objects = (() => {
   }
   
   function update(dt, level, speedMultiplier, playerCenter) {
-    // Spawn
-    spawnTimer += dt;
-    const interval = level.spawnInterval / speedMultiplier;
-    if (spawnTimer >= interval) {
-      spawnTimer -= interval;
-      spawn(level, speedMultiplier);
+    // Spawn (skipped when frozen for end-of-level sequence)
+    if (!spawnFrozen) {
+      spawnTimer += dt;
+      const interval = level.spawnInterval / speedMultiplier;
+      if (spawnTimer >= interval) {
+        spawnTimer -= interval;
+        spawn(level, speedMultiplier);
+      }
     }
     
     // Move objects
@@ -234,5 +242,5 @@ const Objects = (() => {
     });
   }
   
-  return { init, reset, update, checkCollisions, draw };
+  return { init, reset, update, checkCollisions, draw, setSpawnFrozen };
 })();

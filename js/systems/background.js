@@ -44,6 +44,24 @@ const Background = (() => {
     });
   });
 
+  // Castle end-of-level sprite (loaded separately, not in LAYER_CONFIG)
+  const castleImg = new Image();
+  castleImg.src = 'sprites/backgrounds/level1-castle.png';
+
+  function getCastleWidth() {
+    if (!castleImg.complete || !castleImg.naturalWidth) return 0;
+    const dh = H * 0.90;
+    return castleImg.naturalWidth * (dh / castleImg.naturalHeight);
+  }
+
+  function drawCastle(castleX) {
+    if (!castleImg.complete || !castleImg.naturalWidth) return;
+    const dh = H * 0.90;
+    const cw = castleImg.naturalWidth * (dh / castleImg.naturalHeight);
+    const drawY = 1.08 * H - dh;
+    ctx.drawImage(castleImg, Math.round(castleX), Math.round(drawY), Math.ceil(cw), Math.ceil(dh));
+  }
+
   function layerReady(name) {
     return bgLayers[name].every(img => img.complete && img.naturalWidth);
   }
@@ -238,5 +256,5 @@ const Background = (() => {
     offset = 0;
   }
 
-  return { update, draw, reset };
+  return { update, draw, reset, drawCastle, getCastleWidth };
 })();

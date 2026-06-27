@@ -9,6 +9,7 @@ const GAME_STATE = {
   LEVELUP: 'levelup',    // Level transition screen
   GAMEOVER: 'gameover',
   VICTORY: 'victory',    // Level 1 time-based win screen
+  CASTLE_INTRO: 'castle_intro', // Castle fly-in animation before victory
 };
 
 // ── Color Palette ──────────────────────────────────────────
