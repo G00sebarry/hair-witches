@@ -70,6 +70,7 @@ const Game = (() => {
   }
 
   function startFromSelect() {
+    if (typeof LeadForm !== 'undefined') LeadForm.init();
     const theme = SelectScreen.getSelected();
     Player.setTheme(theme);
 
@@ -458,13 +459,20 @@ const Game = (() => {
 
       if (hasClick) {
         hasClick = false;
-        const btnW = 220 * SCALE, btnH = 44 * SCALE;
+        const btnW = 230 * SCALE, btnH = 46 * SCALE;
         const btnX = W / 2 - btnW / 2;
-        const btnY = VictoryScreen.getRestartBtnY();
+        const btnY = VictoryScreen.getActionBtnY();
         if (btnY > 0 && clickX >= btnX && clickX <= btnX + btnW &&
             clickY >= btnY && clickY <= btnY + btnH) {
           Audio8Bit.sfxClick();
-          state = GAME_STATE.SELECT;
+          if (VictoryScreen.isCodeUnlocked()) {
+            state = GAME_STATE.SELECT;
+          } else {
+            let tier = PROMO_TIERS[0];
+            for (const t of PROMO_TIERS) { if (totalScore >= t.minScore) tier = t; }
+            const disc = parseInt(String(tier.discount).replace('%', '')) || 5;
+            LeadForm.show(disc, totalScore, (code) => { VictoryScreen.unlockCode(code); });
+          }
         }
       }
       Input.consumeJustPressed();
@@ -487,13 +495,20 @@ const Game = (() => {
 
       if (gameOverDelay > 2.0 && hasClick) {
         hasClick = false;
-        const btnW = 170 * SCALE, btnH = 44 * SCALE;
+        const btnW = 230 * SCALE, btnH = 46 * SCALE;
         const btnX = W / 2 - btnW / 2;
-        const btnY = GameOverScreen.getRestartBtnY();
+        const btnY = GameOverScreen.getActionBtnY();
         if (btnY > 0 && clickX >= btnX && clickX <= btnX + btnW &&
             clickY >= btnY && clickY <= btnY + btnH) {
           Audio8Bit.sfxClick();
-          state = GAME_STATE.SELECT;
+          if (GameOverScreen.isCodeUnlocked()) {
+            state = GAME_STATE.SELECT;
+          } else {
+            let tier = PROMO_TIERS[0];
+            for (const t of PROMO_TIERS) { if (totalScore >= t.minScore) tier = t; }
+            const disc = parseInt(String(tier.discount).replace('%', '')) || 5;
+            LeadForm.show(disc, totalScore, (code) => { GameOverScreen.unlockCode(code); });
+          }
         }
       }
       Input.consumeJustPressed();

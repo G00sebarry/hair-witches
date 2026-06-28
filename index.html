@@ -15,6 +15,21 @@
   <button id="pause-toggle" aria-label="Pause">II</button>
   <button id="sound-toggle" aria-label="Toggle sound">🔊</button>
 
+  <!-- Lead capture form -->
+  <div id="lead-overlay" class="lead-hidden">
+    <div id="lead-card">
+      <div id="lead-title">ЗАБЕРИ СВОЙ ПРОМОКОД</div>
+      <div id="lead-sub">Заполни — и забирай промокод на услугу Hair Witches</div>
+
+      <input id="lead-name" type="text" placeholder="Как тебя зовут?" autocomplete="name" maxlength="40">
+      <input id="lead-phone" type="tel" placeholder="+7 (___) ___-__-__" autocomplete="tel" maxlength="18">
+      <div id="lead-error"></div>
+
+      <button id="lead-submit">ПОЛУЧИТЬ ПРОМОКОД</button>
+      <div id="lead-privacy">Нажимая кнопку, ты соглашаешься на обработку данных</div>
+    </div>
+  </div>
+
   <!-- Load game modules in order -->
   <script src="js/utils/constants.js"></script>
   <script src="js/utils/helpers.js"></script>
@@ -32,6 +47,7 @@
   <script src="js/screens/victory.js"></script>
   <script src="js/screens/gameover.js"></script>
   <script src="js/screens/levelup.js"></script>
+  <script src="js/core/leadform.js"></script>
   <script src="js/core/game.js"></script>
 </body>
 </html>
