@@ -3,3 +3,4 @@ PSD/
 *.psd
 .DS_Store
 node_modules/
+js/core/secrets.js

@@ -4,9 +4,9 @@
    ============================================================ */
 
 const LeadForm = (() => {
-  // ── НАСТРОЙКИ: ВПИШИ СВОИ ЗНАЧЕНИЯ ──────────────────────
-  const TG_TOKEN   = '8226998044:AAGE92FHkD5Q9GD5LOcsrDZNeDlT27H9LoU';      // токен бота от @BotFather
-  const TG_CHAT_ID = '32367495';    // твой chat_id (число)
+  // ── Читаем из secrets.js (подключается перед этим файлом в index.html) ──
+  const TG_TOKEN   = (typeof CONFIG !== 'undefined') ? CONFIG.TG_TOKEN   : '';
+  const TG_CHAT_ID = (typeof CONFIG !== 'undefined') ? CONFIG.TG_CHAT_ID : '';
 
   // Три НЕугадываемых кода по тирам скидки
   const CODES = {
