@@ -4,9 +4,9 @@
    ============================================================ */
 
 const LeadForm = (() => {
-  // ── Читаем из secrets.js (подключается перед этим файлом в index.html) ──
-  const TG_TOKEN   = (typeof CONFIG !== 'undefined') ? CONFIG.TG_TOKEN   : '';
-  const TG_CHAT_ID = (typeof CONFIG !== 'undefined') ? CONFIG.TG_CHAT_ID : '';
+  // ── НАСТРОЙКИ: ВПИШИ СВОИ ЗНАЧЕНИЯ ──────────────────────
+  const TG_TOKEN   = (typeof CONFIG !== 'undefined') ? CONFIG.TG_TOKEN : '';
+const TG_CHAT_ID = (typeof CONFIG !== 'undefined') ? CONFIG.TG_CHAT_ID : '';
 
   // Три НЕугадываемых кода по тирам скидки
   const CODES = {
