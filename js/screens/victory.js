@@ -112,7 +112,7 @@ const VictoryScreen = (() => {
       ctx.fillStyle = '#CCC';
       ctx.fillText('Твой промокод:', cx, midY - 22 * SCALE);
 
-      const shownCode = unlockedCode || tier.code;
+      const shownCode = unlockedCode || (typeof LeadForm !== 'undefined' ? LeadForm.getCodeForDiscount(discountNum) : tier.code);
       ctx.font = `bold ${20 * SCALE}px 'Press Start 2P', monospace`;
       ctx.shadowColor = tier.color; ctx.shadowBlur = 12;
       ctx.fillStyle = tier.color;
