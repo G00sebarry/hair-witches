@@ -4,9 +4,7 @@
    ============================================================ */
 
 const LeadForm = (() => {
-  // ── НАСТРОЙКИ: ВПИШИ СВОИ ЗНАЧЕНИЯ ──────────────────────
-  const TG_TOKEN   = (typeof CONFIG !== 'undefined') ? CONFIG.TG_TOKEN : '';
-const TG_CHAT_ID = (typeof CONFIG !== 'undefined') ? CONFIG.TG_CHAT_ID : '';
+  // ── НАСТРОЙКИ ──────────────────────────────────────────
 
   // Три НЕугадываемых кода по тирам скидки
   const CODES = {
@@ -111,22 +109,14 @@ const TG_CHAT_ID = (typeof CONFIG !== 'undefined') ? CONFIG.TG_CHAT_ID : '';
     return null;
   }
 
-  // ── Отправка в Telegram ──
-  async function sendToTelegram(name, phone, discount, code, score) {
-    const text =
-      `🆕 Новый лид Hair Witches!\n` +
-      `Имя: ${name}\n` +
-      `Телефон: ${phone}\n` +
-      `Скидка: ${discount}% (код ${code})\n` +
-      `Очки: ${score}`;
-
-    const url = `https://api.telegram.org/bot${TG_TOKEN}/sendMessage`;
-    const resp = await fetch(url, {
+  // ── Отправка лида на сервер ──
+  async function sendLead(name, phone, discount, code, score) {
+    const resp = await fetch('/api/lead', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TG_CHAT_ID, text }),
+      body: JSON.stringify({ name, phone, discount, code, score }),
     });
-    if (!resp.ok) throw new Error('tg send failed: ' + resp.status);
+    if (!resp.ok) throw new Error('lead send failed: ' + resp.status);
     return true;
   }
 
@@ -147,7 +137,7 @@ const TG_CHAT_ID = (typeof CONFIG !== 'undefined') ? CONFIG.TG_CHAT_ID : '';
     submitBtn.textContent = 'ОТПРАВЛЯЕМ...';
 
     try {
-      await sendToTelegram(name, phone, currentDiscount, code, currentScore);
+      await sendLead(name, phone, currentDiscount, code, currentScore);
     } catch (e) {
       // даже если ТГ не дошёл — не блокируем человека, код всё равно дадим,
       // но залогируем в консоль. (для MVP: лучше выдать код, чем потерять лояльность)
