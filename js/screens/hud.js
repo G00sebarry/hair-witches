@@ -59,6 +59,53 @@ const HUD = (() => {
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
 
+    // ── Прогресс к следующему тиру скидки (под сердцами) ─
+    let shieldY = heartY + 26 * SCALE;
+    {
+      const prog = promoProgress(score);
+      const barX = 15;
+      const barW = 140 * SCALE;
+      const barH = 6 * SCALE;
+      const labelY = heartY + heartSize + 4 * SCALE;
+      const barY = labelY + 11 * SCALE;
+
+      // подпись
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.font = `${8 * SCALE}px 'Orbitron', sans-serif`;
+
+      if (prog.isMax) {
+        const g = 0.55 + 0.45 * Math.sin(time * 3);
+        ctx.fillStyle = COL.lime;
+        ctx.shadowColor = COL.lime;
+        ctx.shadowBlur = 8 * g;
+        ctx.fillText('✦ 15% MAX', barX, labelY);
+        ctx.shadowBlur = 0;
+      } else {
+        ctx.fillStyle = prog.next.color;
+        ctx.fillText(`${prog.next.discount} → ${prog.next.minScore}`, barX, labelY);
+      }
+
+      // фон полоски
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      roundRect(barX, barY, barW, barH, barH / 2);
+      ctx.fill();
+
+      // заполнение
+      const barColor = prog.isMax ? COL.lime : prog.next.color;
+      const fillW = prog.fraction <= 0 ? 0 : Math.max(barH, barW * prog.fraction);
+      if (fillW > 0) {
+        ctx.fillStyle = barColor;
+        ctx.shadowColor = barColor;
+        ctx.shadowBlur = prog.isMax ? 8 : 4;
+        roundRect(barX, barY, fillW, barH, barH / 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+
+      shieldY = barY + barH + 9 * SCALE;
+    }
+
     // ── ПО ЦЕНТРУ ВВЕРХУ: обратный таймер крупным числом ─
     if (level.id === 1) {
       const DURATION = 90;
@@ -111,7 +158,7 @@ const HUD = (() => {
       ctx.fillStyle = COL.cyan;
       ctx.shadowColor = COL.cyan;
       ctx.shadowBlur = 5;
-      ctx.fillText(`🛡 ${shieldTimer.toFixed(1)}s`, 15, heartY + 26 * SCALE);
+      ctx.fillText(`🛡 ${shieldTimer.toFixed(1)}s`, 15, shieldY);
       ctx.shadowBlur = 0;
     }
 

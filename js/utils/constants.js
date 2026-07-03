@@ -11,6 +11,7 @@ const GAME_STATE = {
   GAMEOVER: 'gameover',
   VICTORY: 'victory',    // Level 1 time-based win screen
   CASTLE_INTRO: 'castle_intro', // Castle fly-in animation before victory
+  READY: 'ready',        // Онбординг: готовность перед самым первым забегом
 };
 
 // ── Color Palette ──────────────────────────────────────────
@@ -132,7 +133,7 @@ const PROMO_TIERS = [
     color: COL.pink,
   },
   {
-    minScore: 800,
+    minScore: 550,
     title: '★ Опытная колдунья',
     sub: 'Отличная работа!',
     code: 'MX9QP4',
@@ -140,7 +141,7 @@ const PROMO_TIERS = [
     color: COL.cyan,
   },
   {
-    minScore: 2000,
+    minScore: 1000,
     title: '✦ ВЕРХОВНАЯ ВЕДЬМА ✦',
     sub: 'Ты — мастер цвета!',
     code: 'ZK3R8N',
@@ -148,6 +149,32 @@ const PROMO_TIERS = [
     color: COL.lime,
   },
 ];
+
+// ── Promo progress helpers (единый источник для HUD и экранов) ──
+// Индекс текущего тира по очкам
+function promoTierIndex(score) {
+  let idx = 0;
+  for (let i = 0; i < PROMO_TIERS.length; i++) {
+    if (score >= PROMO_TIERS[i].minScore) idx = i;
+  }
+  return idx;
+}
+
+// Прогресс к следующему тиру: fraction 0..1 от порога текущего до следующего,
+// remaining — сколько очков осталось. isMax=true когда достигнут верхний тир.
+function promoProgress(score) {
+  const idx = promoTierIndex(score);
+  const current = PROMO_TIERS[idx];
+  const next = PROMO_TIERS[idx + 1] || null;
+  if (!next) {
+    return { idx, current, next: null, isMax: true, fraction: 1, remaining: 0 };
+  }
+  const span = next.minScore - current.minScore;
+  const into = score - current.minScore;
+  const fraction = span > 0 ? Math.max(0, Math.min(1, into / span)) : 1;
+  const remaining = Math.max(0, next.minScore - score);
+  return { idx, current, next, isMax: false, fraction, remaining };
+}
 
 // ── Player Physics ─────────────────────────────────────────
 const PLAYER_CONFIG = {

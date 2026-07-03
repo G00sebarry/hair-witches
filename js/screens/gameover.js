@@ -1,26 +1,58 @@
 /* ============================================================
    SCREEN: GAME OVER — промокод скрыт до захвата лида
+   Рестарт в один тап + near-miss до следующего тира + рекорд
    ============================================================ */
 
 const GameOverScreen = (() => {
   let showTimer = 0;
-  let actionBtnY = -1;
   let codeUnlocked = false;
   let unlockedCode = '';
+  let bestScore = 0;
+  let isNewRecord = false;
 
-  function reset() {
+  // хит-зоны (заполняются в draw, читаются в handleClick)
+  let promoBtnRect = null;
+  let restartBtnRect = null;
+  let selectLinkRect = null;
+
+  function reset(finalScore) {
     showTimer = 0;
-    actionBtnY = -1;
     codeUnlocked = false;
     unlockedCode = '';
+    promoBtnRect = null;
+    restartBtnRect = null;
+    selectLinkRect = null;
+
+    // рекорд (Фича 2.3)
+    const stored = parseInt(localStorage.getItem('hw_best_score') || '0');
+    if (typeof finalScore === 'number' && finalScore > stored) {
+      isNewRecord = true;
+      bestScore = finalScore;
+      try { localStorage.setItem('hw_best_score', String(finalScore)); } catch (e) {}
+    } else {
+      isNewRecord = false;
+      bestScore = stored;
+    }
+
     if (typeof LeadForm !== 'undefined' && LeadForm.alreadyCaptured()) {
       codeUnlocked = true;
     }
   }
 
-  function getActionBtnY() { return actionBtnY; }
   function isCodeUnlocked() { return codeUnlocked; }
   function unlockCode(code) { codeUnlocked = true; unlockedCode = code; }
+
+  function inRect(mx, my, r) {
+    return r && mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h;
+  }
+
+  // возвращает 'restart' | 'lead' | 'select' | null
+  function handleClick(mx, my) {
+    if (inRect(mx, my, restartBtnRect)) return 'restart';
+    if (inRect(mx, my, promoBtnRect)) return 'lead';
+    if (inRect(mx, my, selectLinkRect)) return 'select';
+    return null;
+  }
 
   function getTier(totalScore) {
     let tier = PROMO_TIERS[0];
@@ -50,6 +82,8 @@ const GameOverScreen = (() => {
 
     const tier = getTier(totalScore);
     const discountNum = tierDiscountNum(tier);
+    const prog = promoProgress(totalScore);
+    const nearMiss = !prog.isMax && prog.fraction >= 0.7 && prog.fraction < 1;
 
     // GAME OVER
     ctx.font = `900 ${26 * SCALE}px 'Orbitron', sans-serif`;
@@ -72,6 +106,19 @@ const GameOverScreen = (() => {
     ctx.fillStyle = '#888';
     ctx.fillText('очков', cx, cy + 20 * SCALE);
     cy += 38 * SCALE;
+
+    // Рекорд (Фича 2.3)
+    ctx.font = `${8 * SCALE}px 'Orbitron', sans-serif`;
+    if (isNewRecord) {
+      ctx.fillStyle = tier.color;
+      ctx.shadowColor = tier.color; ctx.shadowBlur = 8;
+      ctx.fillText('НОВЫЙ РЕКОРД!', cx, cy);
+      ctx.shadowBlur = 0;
+    } else {
+      ctx.fillStyle = '#8878a0';
+      ctx.fillText(`рекорд: ${bestScore}`, cx, cy);
+    }
+    cy += 18 * SCALE;
 
     // Лестница тиров
     cy = drawTierLadder(cx, cy, discountNum);
@@ -123,32 +170,66 @@ const GameOverScreen = (() => {
       ctx.fillText(`Забери промокод на скидку ${tier.discount}`, cx, midY + 30 * SCALE);
     }
 
-    cy = boxY + boxH + 20 * SCALE;
+    cy = boxY + boxH + 14 * SCALE;
 
-    // Кнопка
-    const btnW = 230 * SCALE, btnH = 46 * SCALE;
+    // Near-miss: чуть-чуть не хватило до следующего тира (Фича 1.3)
+    if (nearMiss) {
+      ctx.font = `bold ${9.5 * SCALE}px 'Orbitron', sans-serif`;
+      ctx.fillStyle = prog.next.color;
+      ctx.shadowColor = prog.next.color; ctx.shadowBlur = 8;
+      ctx.fillText(`Не хватило ${prog.remaining} очков до скидки ${prog.next.discount}!`, cx, cy);
+      ctx.shadowBlur = 0;
+      cy += 20 * SCALE;
+    }
+
+    // ── Кнопки ──
+    const btnW = 230 * SCALE, btnH = 44 * SCALE;
     const btnX = cx - btnW / 2;
-    actionBtnY = cy;
-    const pulse = 0.96 + 0.04 * Math.sin(time * 5);
 
+    // 1) Забрать промокод (только пока код не забран)
+    promoBtnRect = null;
+    if (!codeUnlocked) {
+      promoBtnRect = { x: btnX, y: cy, w: btnW, h: btnH };
+      ctx.fillStyle = '#001a08';
+      ctx.strokeStyle = COL.lime;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = COL.lime; ctx.shadowBlur = 10;
+      roundRect(btnX, cy, btnW, btnH, 10);
+      ctx.fill(); ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.font = `bold ${12 * SCALE}px 'Orbitron', sans-serif`;
+      ctx.fillStyle = COL.lime;
+      ctx.fillText('ЗАБРАТЬ ПРОМОКОД', cx, cy + btnH / 2);
+      cy += btnH + 12 * SCALE;
+    }
+
+    // 2) ЕЩЁ РАЗ — мгновенный рестарт (всегда). Пульс сильнее при near-miss
+    restartBtnRect = { x: btnX, y: cy, w: btnW, h: btnH };
+    const amp = nearMiss ? 0.06 : 0.04;
+    const pulse = 0.96 + amp * Math.sin(time * 5);
     ctx.save();
     ctx.translate(cx, cy + btnH / 2);
     ctx.scale(pulse, pulse);
     ctx.translate(-cx, -(cy + btnH / 2));
-
-    const btnColor = codeUnlocked ? COL.fuchsia : COL.lime;
-    ctx.fillStyle = codeUnlocked ? '#1a0014' : '#001a08';
-    ctx.strokeStyle = btnColor;
+    ctx.fillStyle = '#1a0014';
+    ctx.strokeStyle = COL.fuchsia;
     ctx.lineWidth = 2;
+    ctx.shadowColor = COL.fuchsia; ctx.shadowBlur = 12;
     roundRect(btnX, cy, btnW, btnH, 10);
     ctx.fill(); ctx.stroke();
-
-    ctx.shadowColor = btnColor; ctx.shadowBlur = 12;
-    ctx.font = `bold ${12 * SCALE}px 'Orbitron', sans-serif`;
-    ctx.fillStyle = btnColor;
-    ctx.fillText(codeUnlocked ? '↻ ИГРАТЬ ЕЩЁ' : 'ЗАБРАТЬ ПРОМОКОД', cx, cy + btnH / 2);
+    ctx.font = `bold ${13 * SCALE}px 'Orbitron', sans-serif`;
+    ctx.fillStyle = COL.fuchsia;
+    ctx.fillText('↻ ЕЩЁ РАЗ', cx, cy + btnH / 2);
     ctx.shadowBlur = 0;
     ctx.restore();
+    cy += btnH + 16 * SCALE;
+
+    // 3) Сменить ведьму — текст-ссылка → SELECT
+    const linkH = 22 * SCALE;
+    selectLinkRect = { x: cx - 80 * SCALE, y: cy - linkH / 2, w: 160 * SCALE, h: linkH };
+    ctx.font = `${9.5 * SCALE}px 'Orbitron', sans-serif`;
+    ctx.fillStyle = '#9a8fb5';
+    ctx.fillText('сменить ведьму', cx, cy);
 
     ctx.restore();
   }
@@ -198,5 +279,5 @@ const GameOverScreen = (() => {
     return y;
   }
 
-  return { draw, reset, getActionBtnY, isCodeUnlocked, unlockCode };
+  return { draw, reset, isCodeUnlocked, unlockCode, handleClick };
 })();
