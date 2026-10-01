@@ -20,16 +20,24 @@ const LeadForm = (() => {
   let onComplete = null;     // колбэк после успеха: (code) => {}
   let currentDiscount = 5;
   let currentScore = 0;
+  let initialized = false;
+  let submitting = false;
+  let capturedThisSession = false;
+  let failedAttempts = 0;
+  let fallbackBox;
 
   function init() {
+    if (initialized) return;
     overlay    = document.getElementById('lead-overlay');
     card       = document.getElementById('lead-card');
     nameInput  = document.getElementById('lead-name');
     phoneInput = document.getElementById('lead-phone');
     errorBox   = document.getElementById('lead-error');
     submitBtn  = document.getElementById('lead-submit');
+    fallbackBox = document.getElementById('lead-fallback');
 
     if (!overlay) return;
+    initialized = true;
 
     // автоформат телефона
     phoneInput.addEventListener('input', onPhoneInput);
@@ -42,6 +50,7 @@ const LeadForm = (() => {
 
   // ── Уже оставлял контакт? ──
   function alreadyCaptured() {
+    if (capturedThisSession) return true;
     try { return localStorage.getItem(LS_KEY) === '1'; }
     catch (e) { return false; }
   }
@@ -53,6 +62,8 @@ const LeadForm = (() => {
   // ── Показать форму ──
   // discount: 5|10|15, score: число, cb: колбэк(code) после успеха
   function show(discount, score, cb) {
+    if (submitting) return;
+    init();
     currentDiscount = discount;
     currentScore = score;
     onComplete = cb;
@@ -63,9 +74,17 @@ const LeadForm = (() => {
       return;
     }
 
-    if (!overlay) { if (onComplete) onComplete(getCodeForDiscount(discount)); return; }
+    if (!overlay) {
+      console.error('Lead form is unavailable');
+      return;
+    }
 
     errorBox.textContent = '';
+    failedAttempts = 0;
+    if (fallbackBox) {
+      fallbackBox.hidden = true;
+      fallbackBox.textContent = '';
+    }
     nameInput.value = '';
     phoneInput.value = '+7 ';
     submitBtn.disabled = false;
@@ -76,6 +95,35 @@ const LeadForm = (() => {
 
   function hide() {
     if (overlay) overlay.classList.add('lead-hidden');
+  }
+
+  function showFallback() {
+    if (!fallbackBox) return;
+    fallbackBox.textContent = 'Не получилось отправить заявку. Позвони или напиши в салон и назови свой результат';
+    const result = document.createElement('div');
+    result.textContent = `Твой результат: ${currentScore} очков`;
+    fallbackBox.appendChild(result);
+
+    const phone = SALON_CONTACT.phone.trim();
+    const normalizedPhone = phone.replace(/[\s()-]/g, '');
+    if (/^\+\d{10,15}$/.test(normalizedPhone)) {
+      const link = document.createElement('a');
+      link.href = `tel:${normalizedPhone}`;
+      link.textContent = phone;
+      fallbackBox.appendChild(link);
+    }
+    try {
+      const url = new URL(SALON_CONTACT.messageUrl);
+      if (url.protocol === 'https:') {
+        const link = document.createElement('a');
+        link.href = url.href;
+        link.textContent = 'Написать в салон';
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        fallbackBox.appendChild(link);
+      }
+    } catch (e) {}
+    fallbackBox.hidden = false;
   }
 
   // ── Автоформат телефона +7 (___) ___-__-__ ──
@@ -111,17 +159,25 @@ const LeadForm = (() => {
 
   // ── Отправка лида на сервер ──
   async function sendLead(name, phone, discount, code, score) {
-    const resp = await fetch('/api/lead', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phone, discount, code, score }),
-    });
-    if (!resp.ok) throw new Error('lead send failed: ' + resp.status);
-    return true;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    try {
+      const resp = await fetch('/api/lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({ name, phone, discount, code, score }),
+      });
+      const result = await resp.json();
+      if (!resp.ok || result.ok !== true) throw new Error('LEAD_NOT_CONFIRMED');
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   // ── Сабмит ──
   async function onSubmit() {
+    if (submitting) return;
     const err = validate();
     if (err) {
       errorBox.textContent = err;
@@ -133,25 +189,36 @@ const LeadForm = (() => {
     const phone = phoneInput.value.trim();
     const code = getCodeForDiscount(currentDiscount);
 
+    submitting = true;
     submitBtn.disabled = true;
+    nameInput.disabled = true;
+    phoneInput.disabled = true;
     submitBtn.textContent = 'ОТПРАВЛЯЕМ...';
 
+    let delivered = false;
     try {
       await sendLead(name, phone, currentDiscount, code, currentScore);
+      delivered = true;
+      capturedThisSession = true;
+      try {
+        localStorage.setItem(LS_KEY, '1');
+        localStorage.setItem(LS_NAME, name);
+      } catch (e) {}
     } catch (e) {
-      // даже если ТГ не дошёл — не блокируем человека, код всё равно дадим,
-      // но залогируем в консоль. (для MVP: лучше выдать код, чем потерять лояльность)
-      console.warn('Lead send error:', e);
+      failedAttempts++;
+      errorBox.textContent = 'Не удалось подтвердить отправку. Данные сохранены в форме — попробуй ещё раз.';
+      if (failedAttempts >= 2) showFallback();
+    } finally {
+      submitting = false;
+      submitBtn.disabled = false;
+      nameInput.disabled = false;
+      phoneInput.disabled = false;
+      submitBtn.textContent = delivered ? 'ПОЛУЧИТЬ ПРОМОКОД' : 'ПОВТОРИТЬ ОТПРАВКУ';
     }
-
-    // помечаем что контакт оставлен (один раз)
-    try {
-      localStorage.setItem(LS_KEY, '1');
-      localStorage.setItem(LS_NAME, name);
-    } catch (e) {}
-
-    hide();
-    if (onComplete) onComplete(code);
+    if (delivered) {
+      hide();
+      if (onComplete) onComplete(code);
+    }
   }
 
   return {

@@ -176,3 +176,18 @@ canvas {
   color: #6b5e85;
   line-height: 1.4;
 }
+
+#lead-fallback {
+  margin: 12px 0;
+  color: #ded2f0;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+#lead-fallback a {
+  display: inline-block;
+  margin: 8px 10px 0;
+  color: #7df9ff;
+  text-decoration: underline;
+}

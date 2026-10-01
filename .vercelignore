@@ -1,0 +1,7 @@
+js/core/secrets.js
+.env
+.env.*
+PSD/
+*.psd
+claude_code/
+tmp/
