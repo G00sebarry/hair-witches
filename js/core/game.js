@@ -44,28 +44,34 @@ const Game = (() => {
     try { localStorage.setItem(ONBOARD_KEY, '1'); } catch (e) {}
   }
 
-  // Анимированная рука-подсказка (кружок + волны от касания), нижняя правая треть
+  // Подсказка удержания: палец опускается, держит контакт и отпускает.
   function drawOnboardHand(alpha) {
     const hx = W * 0.72;
     const hy = H * 0.66;
-    const phase = (gameTime % 1.3) / 1.3;  // 0..1 цикл
+    const phase = gameTime % 3;
+    const contact = phase >= 0.3 && phase < 2.4;
+    const holdProgress = clamp((phase - 0.3) / 2.1, 0, 1);
+    const lift = phase < 0.3
+      ? 1 - phase / 0.3
+      : phase < 2.4 ? 0 : (phase - 2.4) / 0.6;
+    const fy = hy - lift * 16 * SCALE;
     ctx.save();
 
-    // расходящиеся волны
-    for (let i = 0; i < 2; i++) {
-      const rp = (phase + i * 0.4) % 1;
-      const rr = 6 * SCALE + rp * 32 * SCALE;
-      ctx.globalAlpha = 0.4 * (1 - rp) * alpha;
-      ctx.strokeStyle = COL.cyan;
-      ctx.lineWidth = 2;
+    if (contact) {
+      ctx.globalAlpha = 0.3 * alpha;
+      ctx.fillStyle = COL.cyan;
       ctx.beginPath();
-      ctx.arc(hx, hy, rr, 0, Math.PI * 2);
+      ctx.arc(hx, hy, 18 * SCALE, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.85 * alpha;
+      ctx.strokeStyle = COL.cyan;
+      ctx.lineWidth = 3 * SCALE;
+      ctx.beginPath();
+      ctx.arc(hx, hy, 25 * SCALE, -Math.PI / 2,
+        -Math.PI / 2 + holdProgress * Math.PI * 2);
       ctx.stroke();
     }
 
-    // кончик пальца — «нажимает» по синусоиде
-    const press = Math.sin(phase * Math.PI);
-    const fy = hy - 5 * SCALE + press * 5 * SCALE;
     ctx.globalAlpha = 0.6 * alpha;
     ctx.fillStyle = COL.white;
     ctx.beginPath();
@@ -76,7 +82,6 @@ const Game = (() => {
     ctx.beginPath();
     ctx.arc(hx, fy, 6 * SCALE, 0, Math.PI * 2);
     ctx.fill();
-
     ctx.restore();
   }
 
@@ -97,7 +102,7 @@ const Game = (() => {
     ctx.fillStyle = COL.cyan;
     ctx.shadowColor = COL.cyan;
     ctx.shadowBlur = 18;
-    ctx.fillText('ДЕРЖИ ПАЛЕЦ', cx, ty);
+    ctx.fillText('ЗАЖМИ И ДЕРЖИ', cx, ty);
     ctx.shadowBlur = 0;
 
     // пояснение
@@ -172,6 +177,8 @@ const Game = (() => {
   }
 
   function startFromSelect() {
+    Input.reset();
+    hasClick = false;
     if (typeof LeadForm !== 'undefined') LeadForm.init();
     const theme = SelectScreen.getSelected();
     Player.setTheme(theme);
@@ -205,6 +212,8 @@ const Game = (() => {
 
   // Мгновенный рестарт забега с той же ведьмой (Фича 2.1)
   function restartRun() {
+    Input.reset();
+    hasClick = false;
     currentLevelIndex = 0;
     totalScore = 0;
     levelScore = 0;
@@ -251,30 +260,32 @@ const Game = (() => {
   }
 
   function triggerVictory() {
+    if (state !== GAME_STATE.CASTLE_INTRO && state !== GAME_STATE.PLAYING) return;
     state = GAME_STATE.VICTORY;
     totalScore += levelScore;
-    const highScore = parseInt(localStorage.getItem('hw_high') || '0');
-    if (totalScore > highScore) {
-      localStorage.setItem('hw_high', String(totalScore));
-    }
+    const recordResult = HighScore.record(totalScore);
     Audio8Bit.stopMusic();
-    VictoryScreen.reset(totalScore);
+    VictoryScreen.reset(totalScore, recordResult);
   }
 
   function triggerGameOver() {
+    if (state !== GAME_STATE.PLAYING) return;
     state = GAME_STATE.GAMEOVER;
     totalScore += levelScore;
-    const highScore = parseInt(localStorage.getItem('hw_high') || '0');
-    if (totalScore > highScore) {
-      localStorage.setItem('hw_high', String(totalScore));
-    }
+    const recordResult = HighScore.record(totalScore);
     Audio8Bit.stopMusic();
-    GameOverScreen.reset(totalScore);
+    GameOverScreen.reset(totalScore, recordResult);
     gameOverDelay = 0;
   }
 
   // ── Main Loop ──────────────────────────────────────────
   function loop(timestamp) {
+    const framePressed = Input.consumeJustPressed();
+    const frameClick = hasClick;
+    const frameClickX = clickX;
+    const frameClickY = clickY;
+    hasClick = false;
+
     const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
     lastTime = timestamp;
     gameTime += dt;
@@ -290,7 +301,7 @@ const Game = (() => {
       StartScreen.draw(gameTime);
       drawScanLines();
 
-      if (Input.consumeJustPressed()) {
+      if (framePressed) {
         Audio8Bit.init();
         Audio8Bit.sfxClick();
         state = GAME_STATE.SELECT;
@@ -304,9 +315,8 @@ const Game = (() => {
       SelectScreen.draw(gameTime);
       drawScanLines();
 
-      if (hasClick) {
-        hasClick = false;
-        const result = SelectScreen.handleClick(clickX, clickY);
+      if (frameClick) {
+        const result = SelectScreen.handleClick(frameClickX, frameClickY);
         if (result === 'go') {
           startFromSelect();
         }
@@ -354,7 +364,7 @@ const Game = (() => {
       drawVignette();
 
       // первое касание = первый взмах = старт забега
-      if (Input.consumeJustPressed()) {
+      if (framePressed) {
         onboardMarkDone();
         pendingOnboard = false;
         onboardFadeTimer = 0.3;        // подсказка растворяется
@@ -567,14 +577,12 @@ const Game = (() => {
       ctx.fillText('ПРОДОЛЖИТЬ', W / 2, btnY + btnH / 2 + 5 * SCALE);
       ctx.restore();
 
-      if (hasClick) {
-        hasClick = false;
-        if (clickX >= btnX && clickX <= btnX + btnW &&
-            clickY >= btnY && clickY <= btnY + btnH) {
+      if (frameClick) {
+        if (frameClickX >= btnX && frameClickX <= btnX + btnW &&
+            frameClickY >= btnY && frameClickY <= btnY + btnH) {
           togglePause();
         }
       }
-      Input.consumeJustPressed();
     }
 
     // ── CASTLE INTRO ─────────────────────────────────────
@@ -661,9 +669,8 @@ const Game = (() => {
       VictoryScreen.draw(totalScore, gameTime);
       drawScanLines();
 
-      if (hasClick) {
-        hasClick = false;
-        const action = VictoryScreen.handleClick(clickX, clickY);
+      if (frameClick) {
+        const action = VictoryScreen.handleClick(frameClickX, frameClickY);
         if (action === 'restart') {
           Audio8Bit.sfxClick();
           restartRun();
@@ -678,7 +685,6 @@ const Game = (() => {
           LeadForm.show(disc, totalScore, (code) => { VictoryScreen.unlockCode(code); });
         }
       }
-      Input.consumeJustPressed();
     }
 
     // ── GAME OVER ────────────────────────────────────────
@@ -697,9 +703,8 @@ const Game = (() => {
       drawScanLines();
 
       // задержка ~1с чтобы случайным тапом (которым уворачивались) не проскочить экран
-      if (gameOverDelay > 1.0 && hasClick) {
-        hasClick = false;
-        const action = GameOverScreen.handleClick(clickX, clickY);
+      if (gameOverDelay > 1.0 && frameClick) {
+        const action = GameOverScreen.handleClick(frameClickX, frameClickY);
         if (action === 'restart') {
           Audio8Bit.sfxClick();
           restartRun();
@@ -714,7 +719,6 @@ const Game = (() => {
           LeadForm.show(disc, totalScore, (code) => { GameOverScreen.unlockCode(code); });
         }
       }
-      Input.consumeJustPressed();
     }
 
     ctx.restore();

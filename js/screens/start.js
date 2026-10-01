@@ -85,7 +85,7 @@ const StartScreen = (() => {
     ctx.fillText('Избегай ножниц и плохой краски!', cx, btnY + btnH + 60 * SCALE);
     
     // High score
-    const hs = parseInt(localStorage.getItem('hw_high') || '0');
+    const hs = HighScore.get();
     if (hs > 0) {
       ctx.font = `${9 * SCALE}px 'Orbitron', sans-serif`;
       ctx.fillStyle = COL.gold;

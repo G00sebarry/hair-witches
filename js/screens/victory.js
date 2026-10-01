@@ -15,7 +15,7 @@ const VictoryScreen = (() => {
   let restartBtnRect = null;
   let selectLinkRect = null;
 
-  function reset(finalScore) {
+  function reset(finalScore, recordResult) {
     showTimer = 0;
     codeUnlocked = false;
     unlockedCode = '';
@@ -24,14 +24,12 @@ const VictoryScreen = (() => {
     selectLinkRect = null;
 
     // рекорд (Фича 2.3)
-    const stored = parseInt(localStorage.getItem('hw_best_score') || '0');
-    if (typeof finalScore === 'number' && finalScore > stored) {
-      isNewRecord = true;
-      bestScore = finalScore;
-      try { localStorage.setItem('hw_best_score', String(finalScore)); } catch (e) {}
-    } else {
+    if (recordResult) {
+      bestScore = recordResult.best;
+      isNewRecord = recordResult.isNewRecord;
+    } else if (typeof finalScore !== 'number') {
+      bestScore = HighScore.get();
       isNewRecord = false;
-      bestScore = stored;
     }
 
     // если контакт уже оставляли раньше — код сразу доступен

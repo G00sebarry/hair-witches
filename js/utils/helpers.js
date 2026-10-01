@@ -15,6 +15,37 @@ function resize() {
 resize();
 window.addEventListener('resize', resize);
 
+const HighScore = (() => {
+  let best = 0;
+
+  function readScore(key) {
+    try {
+      const value = Number(localStorage.getItem(key));
+      return Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  function get() {
+    best = Math.max(best, readScore('hw_best_score'), readScore('hw_high'));
+    return best;
+  }
+
+  function record(score) {
+    const previous = get();
+    const valid = Number.isFinite(score) && score >= 0;
+    const candidate = valid ? Math.floor(score) : previous;
+    best = Math.max(previous, candidate);
+    try {
+      localStorage.setItem('hw_best_score', String(best));
+    } catch (e) {}
+    return { best, isNewRecord: candidate > previous };
+  }
+
+  return { get, record };
+})();
+
 // Rounded rectangle path
 function roundRect(x, y, w, h, r) {
   ctx.beginPath();

@@ -35,6 +35,9 @@ const Player = (() => {
   function update(dt) {
     if (dead) return null;
 
+    shieldTimer = Math.max(0, shieldTimer - dt);
+    invincibleTimer = Math.max(0, invincibleTimer - dt);
+
     // Physics
     if (Input.pressed) {
       vy += cfg.lift * dt;
@@ -56,10 +59,6 @@ const Player = (() => {
       if (vy > 0) vy = 0;
       return 'ground_hit';
     }
-
-    // Timers
-    if (shieldTimer > 0) shieldTimer -= dt;
-    if (invincibleTimer > 0) invincibleTimer -= dt;
 
     // Trail particles
     trailTimer += dt;

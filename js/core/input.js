@@ -37,9 +37,20 @@ const Input = (() => {
     justPressed = false;
     return val;
   }
+
+  function reset() {
+    pressed = false;
+    justPressed = false;
+  }
+
+  window.addEventListener('blur', reset);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) reset();
+  });
   
   return {
     get pressed() { return pressed; },
     consumeJustPressed,
+    reset,
   };
 })();
