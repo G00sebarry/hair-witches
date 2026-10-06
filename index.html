@@ -1,54 +1,10 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Hair Witches: Color Rush</title>
-<link rel="stylesheet" href="css/style.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
-</head>
-<body>
-  <canvas id="game"></canvas>
-  
-  <!-- Pause + Sound buttons -->
-  <button id="pause-toggle" aria-label="Pause">II</button>
-  <button id="sound-toggle" aria-label="Toggle sound">🔊</button>
-
-  <!-- Lead capture form -->
-  <div id="lead-overlay" class="lead-hidden">
-    <div id="lead-card">
-      <div id="lead-title">ЗАБЕРИ СВОЙ ПРОМОКОД</div>
-      <div id="lead-sub">Заполни — и забирай промокод на услугу Hair Witches</div>
-
-      <input id="lead-name" type="text" placeholder="Как тебя зовут?" autocomplete="name" maxlength="40">
-      <input id="lead-phone" type="tel" placeholder="+7 (___) ___-__-__" autocomplete="tel" maxlength="18">
-      <div id="lead-error"></div>
-      <div id="lead-fallback" role="status" aria-live="polite" hidden></div>
-
-      <button id="lead-submit">ПОЛУЧИТЬ ПРОМОКОД</button>
-      <div id="lead-privacy">Нажимая кнопку, ты соглашаешься на обработку данных</div>
-    </div>
-  </div>
-
-  <!-- Load game modules in order -->
-  <script src="js/utils/constants.js"></script>
-  <script src="js/utils/helpers.js"></script>
-  <script src="js/core/audio.js"></script>
-  <script src="js/core/sprites.js"></script>
-  <script src="js/core/input.js"></script>
-  <script src="js/systems/particles.js"></script>
-  <script src="js/systems/background.js"></script>
-  <script src="js/systems/camera.js"></script>
-  <script src="js/entities/player.js"></script>
-  <script src="js/entities/objects.js"></script>
-  <script src="js/screens/start.js"></script>
-  <script src="js/screens/select.js"></script>
-  <script src="js/screens/hud.js"></script>
-  <script src="js/screens/victory.js"></script>
-  <script src="js/screens/gameover.js"></script>
-  <script src="js/screens/levelup.js"></script>
-  <script src="js/core/leadform.js"></script>
-  <script src="js/core/game.js"></script>
-</body>
-</html>
+<!doctype html><html lang="ru"><head><base href="/v2/"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Hair Witches · новый полёт</title><link rel="preload" as="image" href="start-gothic.webp?v=1"><link rel="stylesheet" href="result.css?v=7"><link rel="stylesheet" href="style.css?v=7"><link rel="stylesheet" href="claim.css?v=8"><link rel="stylesheet" href="release.css?v=9"></head><body><main><div class="frame" id="frame" data-screen="intro"><canvas id="game" width="390" height="700" aria-label="Игра Hair Witches: удерживайте для подъёма"></canvas><output id="perfBadge" class="perfBadge" hidden>FPS · замер…</output><div class="hudbuttons"><button id="sound" aria-label="Включить звук" aria-pressed="false"></button><button id="pause" aria-label="Пауза"></button></div><section class="menu startMenu" id="menu" aria-label="Hair Witches — начало игры">
+<img class="startArtwork" src="start-gothic.webp?v=1" alt="Hair Witches potions — красная неоновая вывеска над готической аркой и вечерней Москвой" fetchpriority="high" draggable="false">
+<div class="startShade"></div><div class="heroCopy" id="heroCopy">
+<h1>Лети за своей скидкой</h1><p class="heroLead">90 секунд над Москвой. До 15% за очки.</p>
+<p class="flightHint"><span>Удерживай — вверх</span><span>Отпусти — вниз</span></p>
+<div id="loadingBox" role="status"><progress id="loadProgress" max="100" value="0" aria-label="Загрузка игры"></progress><div id="loadDetail">Готовим полёт…</div><button id="reloadAssets" hidden>Повторить загрузку</button></div>
+<button id="start" disabled>Загрузка…</button><button id="howToPlay" class="howButton" aria-controls="tutorial" aria-expanded="false">Как играть</button>
+<p id="loadStatus" role="status"></p><small>Демоверсия · промокоды пока не выдаются</small></div>
+<section class="tutorial" id="tutorial" aria-labelledby="tutorialTitle" hidden><div class="tutorialCard"><span class="tutorialKicker">ПЕРЕД ПОЛЁТОМ</span><h2 id="tutorialTitle">Держи высоту</h2>
+<ol><li><b>Удерживай — поднимайся</b><span>Зажми экран пальцем. На компьютере — мышью или пробелом.</span></li><li><b>Отпусти — снижайся</b><span>Чередуй удержание и отпускание, чтобы обходить препятствия.</span></li><li><b>Собирай и береги жизни</b><span>Бонусы дают очки. Колтуны, ножницы, взрывы, поезд и земля отнимают жизни. Их у тебя три.</span></li></ol><button id="closeTutorial">ПОНЯТНО</button></div></section></section><section class="menu assetWait" id="assetWait" hidden><h2>Минуточку…</h2><p id="lateMessage">Подгружаем следующий район. Полёт на паузе.</p><progress id="lateProgress" max="100" value="0" aria-label="Загрузка следующего района"></progress><button id="retryLate" hidden>Повторить загрузку</button></section><section class="menu" id="pauseMenu" hidden><h2>Пауза</h2><button id="resume">Продолжить</button><button id="restartPaused">Начать заново</button></section><div class="result" hidden><div class="resultbox"><h2>ТЫ ДОЛЕТЕЛА!</h2><div class="brand">HAIR WITCHES</div><strong class="score">700</strong><span class="caption">ОЧКОВ ЗА ПОЛЁТ</span><ul class="tiers"></ul><p class="motivation"></p><div class="rewardbox"><span class="caption">ТВОЯ СКИДКА</span><div class="reward">10%</div></div><button class="claim">ЗАБРАТЬ ПРОМОКОД</button><button class="again">ЕЩЁ РАЗ</button><p class="claimNote"></p></div></div></div><details class="lab"><summary>Настройки тестового забега</summary><label>Фиолетовая колба <select id="potionMode"><option value="points">Только +25 очков</option><option value="freeze">+25, заморозка и ускорение</option></select></label><label><input id="repeatSeed" type="checkbox"> Повторять указанный сценарий</label><label>Сценарий <input id="seed" type="number" min="1" max="999999" value="17"></label><label><input id="showFps" type="checkbox" checked> Показывать FPS</label><label><input id="hitboxes" type="checkbox"> Показать области столкновений</label><p>Настройки применяются при новом забеге. Заморозка: 3 с, ускорение до 15%, максимум 6 дополнительных секунд. Поезд при столкновении отнимает жизнь. Обновлённый баланс · v3.</p><button id="exportRun">Скопировать результат теста</button><textarea id="report" readonly aria-label="Отчёт забега"></textarea><p id="testStatus"></p><a href="BALANCE.md">Баланс и проверки</a></details></main><script src="asset-manifest.js?v=7"></script><script src="asset-loader.js?v=7"></script><script src="flight-rig.js?v=9"></script><script src="balance.js?v=7"></script><script src="model.js?v=7"></script><script src="city-route.js?v=7"></script><script src="items.js?v=7"></script><script src="result.js"></script><script src="performance.js?v=7"></script><script src="claim.js?v=8"></script><script src="game.js?v=8"></script><script src="start-screen.js?v=7"></script><script src="release.js?v=9"></script></body></html>

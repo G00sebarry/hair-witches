@@ -1,0 +1,1 @@
+(()=>{const test=new URLSearchParams(location.search).get('test')==='1';document.querySelector('.lab').hidden=!test;el('showFps').checked=test;el('perfBadge').hidden=!test;const hint=document.createElement('p');hint.className='desktopHelp';hint.textContent='Удерживай мышь или пробел — вверх · Отпусти — вниз · P — пауза';document.querySelector('#frame').after(hint);})();

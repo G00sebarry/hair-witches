@@ -1,0 +1,33 @@
+*{box-sizing:border-box}body{margin:0;background:#130f19;color:#f8e9db;font:15px/1.5 system-ui}main{max-width:560px;margin:auto;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}.frame{position:relative;width:min(100vw,calc(100dvh * .557143),390px);margin:auto;overflow:hidden;background:#171222;touch-action:none;user-select:none}canvas{width:100%;display:block}.hudbuttons{position:absolute;top:1%;right:2%;display:flex;gap:4px}.hudbuttons button{width:40px;height:44px;background:transparent;border:0;padding:7px;filter:drop-shadow(0 1px 2px #000)}button,select,input{font:inherit}button{background:#832739;border:1px solid #b36170;color:#fff2df;border-radius:5px;padding:12px;min-height:44px;cursor:pointer}button:disabled{opacity:.6}button:focus-visible{outline:2px solid #b9f5ef}.menu{position:absolute;inset:0;background:#110d17e6;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:25px}.menu h1{font:32px Georgia;color:#f8dbdd}.menu p{color:#d8cbd8}.menu button{min-width:220px;margin:8px}small{font-size:11px;color:#c7bac7}[hidden]{display:none!important}.lab{padding:15px;background:#201724}.lab label{display:block;margin:12px 0}.lab input[type=number]{width:100px}.lab select{max-width:100%}.lab p{font-size:12px;color:#bdacbf}.lab textarea{display:block;width:100%;height:90px;margin-top:10px}a{color:#b7e4da}.result{z-index:3}.resultbox .claimNote{padding:4px}.resultbox h2{white-space:nowrap}
+
+/* iOS Safari needs prefixed selection and callout suppression on descendants. */
+.frame,.frame *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#game{touch-action:none;-webkit-user-drag:none}
+.lab textarea,.lab input{-webkit-user-select:text;user-select:text}
+#loadingBox{width:100%;max-width:260px;margin:12px 0}#loadProgress{display:block;width:100%;height:10px;border:1px solid #95616b;border-radius:8px;overflow:hidden;background:#211722;accent-color:#cd7894}#loadProgress::-webkit-progress-bar{background:#211722}#loadProgress::-webkit-progress-value{background:linear-gradient(90deg,#96354e,#efb2ce)}#loadProgress::-moz-progress-bar{background:#cd7894}#loadDetail{font-size:11px;color:#e9c8d4;margin-top:8px;font-variant-numeric:tabular-nums}
+
+.perfBadge{position:absolute;top:96px;right:12px;padding:2px 5px;border-radius:3px;background:#160f2080;color:#c5eedc;font:10px/1.4 monospace;pointer-events:none}
+
+.assetWait{z-index:5}.assetWait progress{width:85%;accent-color:#d98faa}
+
+/* Generated title art; accessible controls and loading remain real HTML. */
+.startMenu{padding:0;background:#110c12;display:block;isolation:isolate}
+.startArtwork,.startShade{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
+.startShade{background:linear-gradient(180deg,transparent 48%,#10091055 61%,#100910c9 77%,#100910ee 100%)}
+.heroCopy{position:absolute;bottom:3.2%;left:8%;right:8%;text-align:center}
+.startMenu h1{font:700 clamp(17px,5vw,21px)/1.18 Georgia,serif;color:#fff0e3;margin:0 0 5px;letter-spacing:.01em;text-shadow:0 2px 5px #000}
+.startMenu .heroLead{font:11px/1.4 system-ui;color:#ecd8d2;margin:0 0 10px}
+.startMenu .flightHint{display:flex;justify-content:center;gap:14px;font:11px/1.4 system-ui;color:#e5bbb8;margin:7px 0 9px}
+.startMenu button{min-width:0;width:100%;margin:5px 0}
+.startMenu #start{min-height:48px;background:linear-gradient(#a23142,#6f152b);border:1px solid #e0948e;box-shadow:inset 0 0 0 3px #631828,0 3px 14px #0008;border-radius:3px;font:700 14px system-ui;letter-spacing:.13em;color:#fff0dd}
+.startMenu #start:active{transform:translateY(1px)}
+.startMenu .howButton{background:none;border:0;box-shadow:none;font:11px system-ui;color:#e0bdbd;min-height:34px;padding:7px;margin:0;text-decoration:underline;text-underline-offset:4px}
+.startMenu small{font:9px/1.3 system-ui;color:#b89aa5}
+.startMenu #loadStatus{font-size:10px;margin:4px 0;color:#ffc4be}.startMenu #loadStatus:empty{display:none}
+.startMenu #loadingBox{max-width:none;margin:5px 0 8px}.startMenu #loadProgress{height:6px}.startMenu #loadDetail{font-size:9px;margin-top:4px}
+.frame[data-screen="intro"] .hudbuttons,.frame[data-screen="intro"] .perfBadge{display:none}
+.tutorial{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;padding:8%;background:#100b13ed}
+.tutorialCard{width:100%;border-top:1px solid #9a4d5b;border-bottom:1px solid #9a4d5b;padding:22px 0}
+.tutorialKicker{font:9px system-ui;letter-spacing:.2em;color:#d5a6ae}.tutorial h2{font:700 25px Georgia;margin:8px 0 24px;color:#f8e1d6}
+.tutorial ol{list-style:none;counter-reset:step;padding:0;margin:0 0 24px;text-align:left;display:grid;gap:18px}.tutorial li{position:relative;padding-left:32px;counter-increment:step}.tutorial li:before{content:counter(step);position:absolute;left:0;top:0;font:20px Georgia;color:#e19298}.tutorial b{display:block;font:700 12px system-ui;color:#f6ddd5;margin-bottom:5px}.tutorial li span{display:block;font:11px/1.5 system-ui;color:#cdbbc8}
+@media(max-height:600px){.heroCopy{bottom:2%}.startMenu .heroLead{margin-bottom:4px}.startMenu .flightHint{margin:4px 0}.startMenu #start{min-height:44px}.tutorialCard{padding:12px 0}.tutorial ol{gap:12px;margin-bottom:15px}}
